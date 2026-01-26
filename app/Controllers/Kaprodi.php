@@ -2119,6 +2119,15 @@ class Kaprodi extends BaseController
         $skripsi = $this->skripsiModel->getMahasiswaLastSkripsi($npm);
         $mahasiswa = $this->mahasiswaModel->where('npm', $npm)->first();
 
+        // Kode Baru (Dengan Pengaman)
+        $rawTanggal = $this->request->getPost("tanggal");
+
+        // Cek dulu: Kalau kosong, JANGAN DIPAKSA FORMAT (Nanti Crash!)
+        if (empty($rawTanggal)) {
+            // Kembalikan ke form dengan pesan error yang manusiawi
+            return redirect()->back()->with('error', 'Tanggal wajib diisi!');
+        }
+        
         // 3. Ambil Input Jadwal
         $tanggal_sidang = date_format(date_create($this->request->getPost("tanggal", FILTER_SANITIZE_SPECIAL_CHARS)), 'Y-m-d');
         $jam_sidang = $this->request->getPost("jam", FILTER_SANITIZE_SPECIAL_CHARS);
@@ -2162,6 +2171,9 @@ class Kaprodi extends BaseController
             'tanggal'       => date('d F Y', strtotime($tanggal_sidang)),
             'jam'           => $jam_sidang,
             'ruangan'       => $ruangan,
+
+            // [FIX] Tambahkan ini agar tidak error di view undangan
+            'nama_kegiatan' => 'Sidang Skripsi',
         ];
 
         // --- KIRIM EMAIL 1: KE PENGUJI ---

@@ -908,7 +908,7 @@ class Fakultas extends BaseController
 
 
 
-    public function updateKalender($id)
+    public function updateKalender()
     {
 
         if (!$this->authenticate(["fakultas"])) return redirect()->to(base_url("unauthorized.php"));

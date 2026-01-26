@@ -166,7 +166,28 @@
 
                                 <?php if ($sp['status'] == 'TERTUNDA'): ?>
 
-                                    <button class="btn btn-primary ubah-jadwal" data-toggle="tooltip" data-placement="top" title="Ubah" data-id="<?= $sp['id'] ?>"><i class="fas fa-pencil-alt"></i></button>
+                                    <?php 
+                                        $timestamp = strtotime($sp['tanggal']);
+                                        $dateOnly = date('Y-m-d', $timestamp);
+                                        $timeOnly = date('H:i', $timestamp);
+                                    ?>
+
+                                    <button class="btn btn-primary ubah-jadwal" data-toggle="tooltip" data-placement="top" title="Ubah" 
+                                        data-id="<?= $sp['id'] ?>"
+                                        data-npm="<?= $sp['npm'] ?>"
+                                        data-nama="<?= $sp['nama_mahasiswa'] ?>"
+                                        data-judul="<?= $sp['judul'] ?>"
+                                        data-bidang="<?= $sp['nama_bidang'] ?>"
+                                        
+                                        data-tanggal="<?= $dateOnly ?>"
+                                        data-jam="<?= $timeOnly ?>"
+                                        data-ruangan="<?= $sp['ruangan'] ?>"
+                                        
+                                        data-reviewer="<?= $sp['dosen_reviewer'] ?>"
+                                    >
+                                        
+                                        <i class="fas fa-pencil-alt"></i>
+                                    </button>
 
                                     <form action="<?= base_url("Kaprodi/deleteJadwalSeminarPrasidang/" . $sp['id']) ?>" method="post" class="d-inline" id="formHapusJadwal">
 
@@ -431,7 +452,7 @@
     </div>
 
 
-
+    <!-- modal ubah jadwal prasidang -->
     <div class="modal fade" id="ubahJadwal" tabindex="-1" role="dialog" aria-labelledby="ubahJadwalLabel" aria-hidden="true">
 
         <div class="modal-dialog" role="document">
@@ -556,8 +577,100 @@
 
 <?= $this->section("scripts"); ?>
 
-    <script src="<?= base_url("assets/vendor/daterangepicker/daterangepicker.js") ?>"></script>
+    <script>
+        var BASE_URL = '<?= base_url() ?>';
+    </script>
 
-    <script src="<?= base_url("assets/js/kaprodi/seminarPrasidang.js");?>" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+    <script src="<?= base_url('assets/vendor/daterangepicker/daterangepicker.js') ?>"></script>
+    <link rel="stylesheet" href="<?= base_url('assets/vendor/daterangepicker/daterangepicker.css') ?>">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
+
+    <script>
+        $(document).ready(function() {
+            // Konfigurasi ini berlaku untuk semua input dengan name="tanggal"
+            $('input[name="tanggal"]').daterangepicker({
+                singleDatePicker: true,
+                showDropdowns: true,
+                autoUpdateInput: false,
+                locale: { format: 'YYYY-MM-DD', cancelLabel: 'Clear' }
+            });
+
+            $('input[name="tanggal"]').on('apply.daterangepicker', function(ev, picker) {
+                $(this).val(picker.startDate.format('YYYY-MM-DD'));
+            });
+
+            $('input[name="tanggal"]').on('cancel.daterangepicker', function(ev, picker) {
+                $(this).val('');
+            });
+        });
+    </script>
+
+    <script src="<?= base_url('assets/js/kaprodi/seminarPrasidang.js') ?>"></script>
+
+    <script>
+        $(document).ready(function() {
+            
+            // Hapus event lama agar tidak bentrok (PENTING)
+            $(document).off('click', '.ubah-jadwal'); 
+
+            // Event Klik Tombol Edit (Gunakan class 'ubah-jadwal' sesuai HTML kamu)
+            $(document).on('click', '.ubah-jadwal', function(e) {
+                e.preventDefault();
+
+                // A. Ambil Data
+                var id = $(this).data('id');
+                var npm = $(this).data('npm');
+                var nama = $(this).data('nama');
+                var bidang = $(this).data('bidang');
+                
+                var rawTanggal = $(this).data('tanggal'); 
+                var jam = $(this).data('jam');
+                var ruangan = $(this).data('ruangan');
+                var reviewer = $(this).data('reviewer');
+
+                // B. Cari Modal
+                var modal = $('#ubahJadwal'); 
+
+                // C. Isi Data Visual
+                modal.find('input[name="mahasiswa"]').val(npm + ' | ' + nama);
+                modal.find('input[name="bidang"]').val(bidang);
+
+                // D. Isi Form
+                modal.find('input[name="jam"]').val(jam);
+                modal.find('input[name="ruangan"]').val(ruangan);
+                
+                // E. Isi Dropdown Reviewer
+                modal.find('select[name="dosen_reviewer"]').val(reviewer).change(); 
+
+                // F. Isi Datepicker dengan Validasi Moment
+                var inputTanggal = modal.find('input[name="tanggal"]');
+                
+                // Gunakan Moment.js untuk memastikan formatnya valid (Mencegah "Invalid Date")
+                var momentDate = moment(rawTanggal, 'YYYY-MM-DD'); 
+                
+                // Jika tanggal valid, set ke input
+                if (momentDate.isValid()) {
+                    inputTanggal.val(momentDate.format('YYYY-MM-DD'));
+                    
+                    // Update internal state datepicker
+                    if (inputTanggal.data('daterangepicker')) {
+                        inputTanggal.data('daterangepicker').setStartDate(momentDate);
+                        inputTanggal.data('daterangepicker').setEndDate(momentDate);
+                    }
+                } else {
+                    inputTanggal.val(''); // Kosongkan jika invalid
+                }
+
+                // G. Update URL Action Form
+                var form = modal.find('form');
+                var actionUrl = "<?= base_url('Kaprodi/updateJadwalSeminarPrasidang') ?>/" + id;
+                form.attr('action', actionUrl);
+
+                // H. Tampilkan Modal
+                modal.modal('show');
+            });
+        });
+    </script>
 
 <?= $this->endSection(); ?>

@@ -63,6 +63,33 @@ class SeminarProposalModel extends Model
         return $query->getRowArray(); // Mengembalikan 1 baris data
     }
 
+    // public function getDetailSeminar($idSeminar) {
+    //     $db = \Config\Database::connect();
+    //     $builder = $db->table('seminar_proposal');
+        
+    //     $builder->select('seminar_proposal.*, 
+    //         mahasiswa.npm, mahasiswa.nama as nama_mahasiswa, 
+    //         proposal.judul,
+    //         proposal.status,
+    //         program_studi.nama as nama_prodi,
+    //         d1.nama as nama_penguji1, d1.inisial as inisial_penguji1,
+    //         d2.nama as nama_penguji2, d2.inisial as inisial_penguji2');
+
+    //     // JOIN KE TABEL UTAMA (Wajib Ada)
+    //     $builder->join('proposal', 'proposal.id = seminar_proposal.id_proposal');
+    //     $builder->join('mahasiswa', 'mahasiswa.npm = proposal.npm');
+    //     $builder->join('program_studi', 'program_studi.id = mahasiswa.id_prodi');
+        
+    //     // --- [FIX] GUNAKAN LEFT JOIN ---
+    //     // Agar kalau penguji 1 atau 2 belum diset, data tetap muncul (tidak dianggap hilang)
+    //     $builder->join('dosen as d1', 'd1.id = seminar_proposal.dosen_penguji1', 'left');
+    //     $builder->join('dosen as d2', 'd2.id = seminar_proposal.dosen_penguji2', 'left'); 
+        
+    //     $builder->where('seminar_proposal.id', $idSeminar);
+
+    //     return $builder->get()->getRowArray();
+    // }
+
 
     public function getSemproByKodeSemester($kodeSemester) {
 

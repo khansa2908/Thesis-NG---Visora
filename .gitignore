@@ -149,3 +149,9 @@ folderHardcover/*
 public/folderHardcover/*
 !folderHardcover/index.html
 !public/folderHardcover/index.html
+
+# Abaikan folder Backup Database
+/app/Database/Backup/
+
+# Opsi Tambahan: Abaikan semua file .sql dimanapun berada (agar lebih aman)
+*.sql

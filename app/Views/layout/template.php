@@ -14,10 +14,22 @@
     <link href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i" rel="stylesheet">
     <link href="<?= base_url("assets/css/sb-admin-2.min.css") ?>" rel="stylesheet">
     
+    <link href="<?= base_url("assets/vendor/datatables/DataTables-1.12.1/css/dataTables.bootstrap4.min.css") ?>" rel="stylesheet">
+    <link href="<?= base_url("assets/vendor/datatables/Buttons-2.2.3/css/buttons.bootstrap4.min.css") ?>" rel="stylesheet">
+    <link href="<?= base_url("assets/vendor/fullcalendar/main.css") ?>" rel="stylesheet" />
+    <link href="<?= base_url("assets/vendor/daterangepicker/daterangepicker.css") ?>" rel="stylesheet" />
+    <link href="<?= base_url("assets/css/style.css") ?>" rel="stylesheet">
+
     <style>
         h1, h2, h3, h4, h5, h6 { color: #000; }
         
-        /* CSS NOTIFIKASI */
+        /* Style DataTables Sort Icon Fix */
+        table.dataTable thead>tr>th.sorting:before, 
+        table.dataTable thead>tr>th.sorting:after { opacity: .4; }
+        table.dataTable thead>tr>th.sorting_asc:before, 
+        table.dataTable thead>tr>th.sorting_desc:after { opacity: 1; }
+
+        /* CSS NOTIFIKASI (DARI TEMPLATE TEMAN) */
         .notif-header {
             background-color: #ffffff !important;
             border-bottom: 1px solid #e3e6f0 !important;
@@ -52,8 +64,6 @@
             opacity: 0.7;
             border-left: 4px solid transparent;
         }
-
-        /* Z-Index Fix untuk Profile Dropdown */
         #userDropdown { position: relative; z-index: 1060; }
         .dropdown-menu { z-index: 1050; }
     </style>
@@ -90,6 +100,26 @@
                                 <img class="img-profile rounded-circle" src="<?= base_url("assets/img/undraw_profile.svg") ?>">
                             </a>
                             <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in" aria-labelledby="userDropdown">
+                                <?php 
+                                    // Logic Role Link Profile (Dari template-aku.php)
+                                    $roles = session()->get("user_session")['roles'] ?? [];
+                                    $profileLink = "#"; 
+                                    if (in_array("mahasiswa", $roles)) $profileLink = base_url("Mahasiswa/profile");
+                                    elseif (in_array("dosen", $roles) || in_array("dospem eksternal", $roles)) $profileLink = base_url("Dosen/profile");
+                                    elseif (in_array("tendik", $roles)) $profileLink = base_url("TenagaKependidikan/profile");
+                                    elseif (in_array("kaprodi", $roles)) $profileLink = base_url("Kaprodi/profile");
+                                    elseif (in_array("fakultas", $roles)) $profileLink = base_url("Fakultas/profile");
+                                    elseif (in_array("admin", $roles)) $profileLink = base_url("admin/dashboard");
+                                ?>
+
+                                <?php if(!in_array("tamu", $roles)): ?>
+                                <a class="dropdown-item" href="<?= $profileLink ?>">
+                                    <i class="fas fa-user-cog fa-sm fa-fw mr-2 text-gray-400"></i>
+                                    Ubah Data Diri
+                                </a>
+                                <?php endif; ?>
+
+                                <div class="dropdown-divider"></div>
                                 <a class="dropdown-item" href="#" data-toggle="modal" data-target="#logoutModal">
                                     <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>
                                     Logout
@@ -103,6 +133,14 @@
                     <?= $this->renderSection('content'); ?>
                 </div>
             </div>
+            
+            <footer class="sticky-footer bg-white">
+                <div class="container my-auto">
+                    <div class="copyright text-center my-auto">
+                        <span><strong class="text-dark">© TheSIS 2022</strong></span>
+                    </div>
+                </div>
+            </footer>
         </div>
     </div>
 
@@ -126,7 +164,27 @@
 
     <script src="<?= base_url("assets/vendor/jquery/jquery.min.js") ?>"></script>
     <script src="<?= base_url("assets/vendor/bootstrap/js/bootstrap.bundle.min.js") ?>"></script>
+    <script src="<?= base_url("assets/vendor/jquery-easing/jquery.easing.min.js") ?>"></script>
     <script src="<?= base_url("assets/js/sb-admin-2.min.js") ?>"></script>
+    
+    <script src="<?= base_url("assets/js/constant.js") ?>"></script> 
+
+    <script src="<?= base_url("assets/vendor/datatables/DataTables-1.12.1/js/jquery.dataTables.min.js") ?>"></script>
+    <script src="<?= base_url("assets/vendor/datatables/DataTables-1.12.1/js/dataTables.bootstrap4.min.js") ?>"></script>
+    
+    <script src="<?= base_url("assets/vendor/sweetalert2/sweetalert2.all.js") ?>"></script>
+    <script src="<?= base_url("assets/vendor/jquery-validate/jquery.validate.min.js") ?>"></script>
+    <script src="<?= base_url("assets/vendor/jquery-validate/additional-methods.min.js") ?>"></script>
+    <script src="<?= base_url("assets/vendor/jquery-validate/localization/messages_id.js") ?>"></script>
+
+    <script src="<?= base_url("assets/vendor/moment/moment.min.js") ?>"></script>
+    <script src="<?= base_url("assets/vendor/daterangepicker/daterangepicker.js") ?>"></script>
+
+    <script>
+        $(document).ready(function () {
+            $('[data-toggle="tooltip"]').tooltip()
+        })
+    </script>
 
     <script>
     $(document).ready(function() {
@@ -136,14 +194,12 @@
                 type: "GET",
                 dataType: "JSON",
                 success: function(response) {
-                    // Update Badge
                     if (response.unread > 0) {
                         $('#navbar-notif-count').text(response.unread).show();
                     } else {
                         $('#navbar-notif-count').hide();
                     }
 
-                    // Susun HTML
                     let htmlOutput = `
                         <div class="notif-header">
                             <span class="font-weight-bold">Notifications</span>
@@ -166,14 +222,12 @@
                         htmlOutput += '<div class="p-4 text-center small text-gray-500">Belum ada pengajuan baru</div>';
                     }
 
-                    htmlOutput += `</div>`; // Tutup notif-scroll-area
+                    htmlOutput += `</div>`;
                     htmlOutput += `<a class="notif-footer-link" href="<?= base_url('TenagaKependidikan/semua_notifikasi') ?>">Lihat Semua Notifikasi</a>`;
                     
                     $('#navbar-notif-list').html(htmlOutput);
                 },
-                error: function() {
-                    console.log("Error fetching notifications");
-                }
+                error: function() { console.log("Error fetching notifications"); }
             });
         }
 
@@ -181,11 +235,11 @@
         setInterval(refreshNotif, 10000);
 
         $(document).on('click', '#btn-mark-all', function() {
-            $.get("<?= base_url('TenagaKependidikan/markAsRead') ?>", function() {
-                refreshNotif();
-            });
+            $.get("<?= base_url('TenagaKependidikan/markAsRead') ?>", function() { refreshNotif(); });
         });
     });
     </script>
+
+    <?= $this->renderSection('scripts'); ?>
 </body>
 </html>

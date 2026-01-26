@@ -56,6 +56,8 @@ class TenagaKependidikan extends BaseController
 
     protected $pengajuanHardcoverModel;
 
+    protected $pembimbingEksternalModel;
+
     public function __construct()
 
     {
@@ -102,7 +104,7 @@ class TenagaKependidikan extends BaseController
 
         $this->penilaianSidangParamModel = new \App\Models\PenilaianSidangParamModel();
 
-        $this->pembimbingModel = new \App\Models\PembimbingEksternalModel();
+        $this->pembimbingEksternalModel = new \App\Models\PembimbingEksternalModel();
 
         $this->pengajuanHardcoverModel = new \App\Models\PengajuanHardcoverModel();
     }
@@ -849,7 +851,7 @@ class TenagaKependidikan extends BaseController
     {
         $data = [
             'title' => 'Kelola Pembimbing Eksternal',
-            'pembimbing' => $this->pembimbingModel->findAll()
+            'pembimbing' => $this->pembimbingEksternalModel->findAll()
         ];
         return view('TenagaKependidikan/pembimbing_eksternal', $data);
     }
@@ -876,7 +878,7 @@ class TenagaKependidikan extends BaseController
         $file->move('uploads/pembimbing', $namaFileBaru);
 
         // Update Database
-        $this->pembimbingModel->update($id, [
+        $this->pembimbingEksternalModel->update($id, [
             $kolomDB => $namaFileBaru
         ]);
 
@@ -887,7 +889,7 @@ class TenagaKependidikan extends BaseController
     public function hapusDokumen($id, $jenis)
     {
         // Ambil data user dulu untuk tahu nama filenya
-        $user = $this->pembimbingModel->find($id);
+        $user = $this->pembimbingEksternalModel->find($id);
         $kolomDB = 'file_' . $jenis;
         $namaFile = $user[$kolomDB];
 
@@ -897,7 +899,7 @@ class TenagaKependidikan extends BaseController
         }
 
         // Set database jadi NULL
-        $this->pembimbingModel->update($id, [
+        $this->pembimbingEksternalModel->update($id, [
             $kolomDB => null
         ]);
 
@@ -969,7 +971,7 @@ class TenagaKependidikan extends BaseController
 
         // 4. Masukkan ke tabel Pembimbing Eksternal
         // Gunakan model yang sudah di-load di __construct
-        $this->pembimbingModel->insert($dataPembimbing);
+        $this->pembimbingEksternalModel->insert($dataPembimbing);
 
         // 5. Update Akun Tamu (Pindahkan ke tabel Akun & Dosen jika perlu)
         // Logika ini sebenarnya duplikat dengan fungsi 'setujuiAkunTamu' di bawah.
@@ -2716,7 +2718,28 @@ class TenagaKependidikan extends BaseController
 
 
 
+    // --- [FIX] FITUR PERSETUJUAN AKUN TAMU (YANG HILANG) ---
+    public function persetujuanAkunTamu()
+    {
+        // 1. Autentikasi Tendik
+        if (!$this->authenticate(["tendik"])) {
+            return redirect()->to(base_url("unauthorized.php"));
+        }
 
+        // 2. Ambil semua data pengajuan akun tamu
+        // Menggunakan model yang sudah ada di constructor
+        $dataPersetujuan = $this->persetujuanTamuModel->findAll();
+
+        $data = [
+            'title' => 'Persetujuan Akun Tamu',
+            // [FIX] Ganti nama key array jadi 'listAkunTamu' (sesuai error di View)
+            'listAkunTamu' => $dataPersetujuan 
+        ];
+
+        // 3. Tampilkan View
+        // Pastikan file view ini ada: app/Views/tenagaKependidikan/persetujuan_akun_tamu.php
+        return view('tenagaKependidikan/persetujuan_akun_tamu', $data);
+    }
 
 
 

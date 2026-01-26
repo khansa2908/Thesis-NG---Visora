@@ -376,7 +376,7 @@ class SidangSkripsiModel extends Model
 
 
 
-    public function getDetailSidangSkripsiById($idSidangSkripsi) {
+    public function getDetailSidangSkripsiById($idSidang) {
 
         // $db = \Config\Database::connect();
 
@@ -458,77 +458,133 @@ class SidangSkripsiModel extends Model
         
         $db = \Config\Database::connect();
 
-        $sql = "SELECT ss.*, 
-        s.judul, s.jenis as jenis_skripsi,
-        m.npm, m.nama as nama_mahasiswa, 
-        b.nama AS nama_bidang, 
+        // $sql = "SELECT ss.*, 
+        // s.judul, s.jenis as jenis_skripsi,
+        // m.npm, m.nama as nama_mahasiswa, 
+        // b.nama AS nama_bidang, 
         
-        -- Data Pembimbing
-        d1.nama as pembimbing1, d1.id as id_pembimbing1, d1.nip as nip_pembimbing1,
-        d2.nama as pembimbing2, d2.id as id_pembimbing2, d2.nip as nip_pembimbing2,
-        d3.nama as pembimbing_agama, d3.id as id_pembimbing_agama, d3.nip as nip_pembimbing_agama,
+        // -- Data Pembimbing
+        // d1.nama as pembimbing1, d1.id as id_pembimbing1, d1.nip as nip_pembimbing1,
+        // d2.nama as pembimbing2, d2.id as id_pembimbing2, d2.nip as nip_pembimbing2,
+        // d3.nama as pembimbing_agama, d3.id as id_pembimbing_agama, d3.nip as nip_pembimbing_agama,
         
-        kli.instansi as instansi_klien, kli.id as id_klien,
-        ps.file_draft_final, ps.file_form_bimbingan, ps.file_persyaratan_sidang,
+        // kli.instansi as instansi_klien, kli.id as id_klien,
+        // ps.file_draft_final, ps.file_form_bimbingan, ps.file_persyaratan_sidang,
         
-        reviewer.nama as nama_reviewer_sempra,
-        sempra.komentar_reviewer as komentar_sempra, sempra.rekomendasi_nilai,
-        reviewer_sempro.nama as nama_reviewer_sempro,
-        prop.komentar as komentar_sempro,
+        // reviewer.nama as nama_reviewer_sempra,
+        // sempra.komentar_reviewer as komentar_sempra, sempra.rekomendasi_nilai,
+        // reviewer_sempro.nama as nama_reviewer_sempro,
+        // prop.komentar as komentar_sempro,
         
-        -- Data Penguji
-        penguji.nama AS nama_penguji,
-        penguji.nip AS nip_penguji,
+        // -- Data Penguji
+        // penguji.nama AS nama_penguji,
+        // penguji.nip AS nip_penguji,
 
-        -- [BARU] Data Ketua Sidang
-        ketua.nama as nama_ketua_sidang,
-        ketua.nip as nip_ketua_sidang
+        // -- [BARU] Data Ketua Sidang
+        // ketua.nama as nama_ketua_sidang,
+        // ketua.nip as nip_ketua_sidang
 
-        FROM sidang_skripsi AS ss
-        INNER JOIN skripsi AS s ON s.id = ss.id_skripsi
+        // FROM sidang_skripsi AS ss
+        // INNER JOIN skripsi AS s ON s.id = ss.id_skripsi
         
-        -- Subquery untuk Seminar Prasidang (Ambil yang terakhir & Layak)
-        INNER JOIN seminar_prasidang as sempra on sempra.id = (
-            select id from seminar_prasidang 
-            where status = 'LAYAK SIDANG' and id_skripsi = s.id 
-            ORDER BY tanggal desc limit 1
-        )
+        // -- Subquery untuk Seminar Prasidang (Ambil yang terakhir & Layak)
+        // INNER JOIN seminar_prasidang as sempra on sempra.id = (
+        //     select id from seminar_prasidang 
+        //     where status = 'LAYAK SIDANG' and id_skripsi = s.id 
+        //     ORDER BY tanggal desc limit 1
+        // )
         
-        INNER JOIN pengajuan_sidang AS ps ON ps.id_skripsi = s.id
-        INNER JOIN mahasiswa As m ON m.npm = s.npm
+        // INNER JOIN pengajuan_sidang AS ps ON ps.id_skripsi = s.id
+        // INNER JOIN mahasiswa As m ON m.npm = s.npm
         
-        -- Subquery Proposal (Ambil yang terakhir diterima/revisi)
-        INNER JOIN proposal as prop on prop.id = (
-            select id from proposal 
-            where status in ('DITERIMA', 'REVISI') and npm = s.npm 
-            ORDER BY tanggal_upload desc limit 1
-        )
+        // -- Subquery Proposal (Ambil yang terakhir diterima/revisi)
+        // INNER JOIN proposal as prop on prop.id = (
+        //     select id from proposal 
+        //     where status in ('DITERIMA', 'REVISI') and npm = s.npm 
+        //     ORDER BY tanggal_upload desc limit 1
+        // )
         
-        INNER JOIN bidang AS b ON b.id = s.id_bidang
+        // INNER JOIN bidang AS b ON b.id = s.id_bidang
         
-        -- Join Pembimbing (Logic yang sudah diperbaiki)
-        INNER JOIN pembimbing AS p1 ON (p1.id_skripsi = s.id AND p1.role = 'Pembimbing Ilmu 1')
-        LEFT JOIN pembimbing AS p2 ON (p2.id_skripsi = s.id AND p2.role = 'Pembimbing Ilmu 2')
-        INNER JOIN pembimbing AS p3 ON (p3.id_skripsi = s.id AND p3.role = 'Pembimbing Agama')
+        // -- Join Pembimbing (Logic yang sudah diperbaiki)
+        // INNER JOIN pembimbing AS p1 ON (p1.id_skripsi = s.id AND p1.role = 'Pembimbing Ilmu 1')
+        // LEFT JOIN pembimbing AS p2 ON (p2.id_skripsi = s.id AND p2.role = 'Pembimbing Ilmu 2')
+        // INNER JOIN pembimbing AS p3 ON (p3.id_skripsi = s.id AND p3.role = 'Pembimbing Agama')
         
-        -- Join Dosen Berdasarkan Peran
-        INNER JOIN dosen AS penguji ON penguji.id = ss.dosen_penguji
-        LEFT JOIN dosen AS ketua ON ketua.id = ss.ketua_sidang  -- <--- JOIN KETUA SIDANG
+        // -- Join Dosen Berdasarkan Peran
+        // INNER JOIN dosen AS penguji ON penguji.id = ss.dosen_penguji
+        // LEFT JOIN dosen AS ketua ON ketua.id = ss.ketua_sidang  -- <--- JOIN KETUA SIDANG
         
-        INNER JOIN dosen AS d1 ON d1.id = p1.id_dosen
-        LEFT JOIN dosen AS d2 ON d2.id = p2.id_dosen
-        INNER JOIN dosen AS d3 ON d3.id = p3.id_dosen
+        // INNER JOIN dosen AS d1 ON d1.id = p1.id_dosen
+        // LEFT JOIN dosen AS d2 ON d2.id = p2.id_dosen
+        // INNER JOIN dosen AS d3 ON d3.id = p3.id_dosen
         
-        INNER JOIN dosen as reviewer on reviewer.id = sempra.dosen_reviewer
-        INNER JOIN dosen as reviewer_sempro on reviewer_sempro.id = prop.pembuat_komentar
+        // INNER JOIN dosen as reviewer on reviewer.id = sempra.dosen_reviewer
+        // INNER JOIN dosen as reviewer_sempro on reviewer_sempro.id = prop.pembuat_komentar
         
-        LEFT JOIN klien as kli on kli.id = ss.klien
+        // LEFT JOIN klien as kli on kli.id = ss.klien
         
-        WHERE ss.id = ?";
+        // WHERE ss.id = ?";
 
-        $result = $db->query($sql, [$idSidangSkripsi]);
+        // $result = $db->query($sql, [$idSidangSkripsi]);
 
-        return $result->getResultArray();
+        // return $result->getResultArray();
+
+        $sql = "SELECT m.nama as nama_mahasiswa, m.npm, 
+                pr.inisial as inisial_prodi, 
+                s.judul,
+                ss.*, 
+                ss.tanggal as tanggal_sidang, ss.ruangan,
+                
+                -- Data Klien
+                k.id as id_klien,
+                k.nama as nama_klien,
+                k.instansi as instansi_klien,
+
+                -- Data ID Pembimbing
+                d1.id as id_pembimbing1,
+                d2.id as id_pembimbing2,
+                da.id as id_pembimbing_agama,
+
+                -- [FIX] ALIAS KHUSUS UNTUK VIEW (Nama Dosen Tanpa Prefix)
+                d1.nama as pembimbing1,
+                d2.nama as pembimbing2,
+                da.nama as pembimbing_agama,
+                penguji.nama as penguji, 
+                ketua.nama as ketua_sidang_nama,
+
+                -- Data Dosen (Lengkap dengan Inisial/NIP)
+                d1.inisial as nip_pembimbing1, d1.nama as nama_pembimbing1,
+                d2.inisial as nip_pembimbing2, d2.nama as nama_pembimbing2,
+                da.inisial as nip_pembimbing_agama, da.nama as nama_pembimbing_agama,
+                
+                penguji.inisial as nip_penguji, penguji.nama as nama_penguji,
+                ketua.inisial as nip_ketua, ketua.nama as nama_ketua
+
+                FROM sidang_skripsi ss
+                JOIN skripsi s ON s.id = ss.id_skripsi
+                JOIN mahasiswa m ON m.npm = s.npm
+                
+                LEFT JOIN program_studi pr ON pr.id = m.id_prodi 
+                LEFT JOIN klien k ON k.id = ss.klien
+                
+                LEFT JOIN dosen penguji ON penguji.id = ss.dosen_penguji
+                LEFT JOIN dosen ketua ON ketua.id = ss.ketua_sidang
+
+                LEFT JOIN pembimbing p1 ON p1.id_skripsi = s.id AND p1.role = 'Pembimbing Ilmu 1'
+                LEFT JOIN dosen d1 ON d1.id = p1.id_dosen
+                
+                LEFT JOIN pembimbing p2 ON p2.id_skripsi = s.id AND p2.role = 'Pembimbing Ilmu 2'
+                LEFT JOIN dosen d2 ON d2.id = p2.id_dosen
+
+                LEFT JOIN pembimbing pa ON pa.id_skripsi = s.id AND pa.role = 'Pembimbing Agama'
+                LEFT JOIN dosen da ON da.id = pa.id_dosen
+
+                WHERE ss.id = ?";
+
+        $query = $db->query($sql, [$idSidang]);
+        
+        return $query->getResultArray();
     }
 
 

@@ -36,12 +36,15 @@
         .no-print { display: block; margin-bottom: 20px; }
 
         /* KOP SURAT */
-        header {
-            text-align: center;
-            margin-bottom: 20px;
+        .header {
+            margin-bottom: 10px;
         }
-        .kop-univ { font-size: 14pt; font-weight: bold; }
-        .kop-fak { font-size: 14pt; font-weight: bold; }
+
+        .header img {
+            height: 85px;
+            /* Tinggi disesuaikan */
+            width: auto;
+        }
         
         /* ISI SURAT */
         .judul-surat {
@@ -135,8 +138,8 @@
     </div>
 
     <header>
-        <div class="kop-univ">UNIVERSITAS YARSI</div>
-        <div class="kop-fak">FAKULTAS TEKNOLOGI INFORMASI</div>
+        
+        <img src="<?= base_url("assets/img/fti.jpg") ?>" width="157" height="62" align="absmiddle">
     </header>
 
     <div class="text-center text-bold judul-surat">

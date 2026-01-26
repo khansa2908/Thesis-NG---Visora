@@ -108,4 +108,25 @@ $routes->group('TenagaKependidikan', ['filter' => 'role:tendik'], function($rout
 
     // Rute Halaman Riwayat
     $routes->get('semua_notifikasi', 'TenagaKependidikan::semua_notifikasi');
+
+    // Fitur Hardcover (GET)
+    $routes->get('verifikasiHardcover', 'TenagaKependidikan::verifikasiHardcover');
+    $routes->get('detailVerifikasiHardcover/(:num)', 'TenagaKependidikan::detailVerifikasiHardcover/$1');
+    $routes->get('unggahHardcover', 'TenagaKependidikan::unggahHardcover');
 });
+
+/* * ====================================================================
+ * SOLUSI: TARUH ROUTE POST DI LUAR GROUP (Global Route)
+ * Ini mem-bypass filter route yang mungkin bermasalah/error
+ * ====================================================================
+ */
+
+// Hardcover Actions
+$routes->post('TenagaKependidikan/setujuiHardcover/(:num)', 'TenagaKependidikan::setujuiHardcover/$1');
+$routes->post('TenagaKependidikan/tolakHardcover/(:num)', 'TenagaKependidikan::tolakHardcover/$1');
+$routes->post('TenagaKependidikan/simpanHardcoverManual', 'TenagaKependidikan::simpanHardcoverManual');
+
+// Cetak Berita Acara (YANG TADI ERROR)
+$routes->post('TenagaKependidikan/cetakBeritaAcaraSempro', 'TenagaKependidikan::cetakBeritaAcaraSempro');
+$routes->post('TenagaKependidikan/cetakBeritaAcaraSidang', 'TenagaKependidikan::cetakBeritaAcaraSidang');
+$routes->post('TenagaKependidikan/updateAndCetakBASidang', 'TenagaKependidikan::updateAndCetakBASidang');
