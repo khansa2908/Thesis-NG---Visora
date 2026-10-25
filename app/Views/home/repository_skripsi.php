@@ -1,0 +1,139 @@
+<?= $this->extend("layout/template"); ?>
+
+
+
+<?= $this->section("content"); ?>
+
+    <h1 class="h3 mb-2 text-gray-800"><?= $title ?></h1>
+
+    <div class="card shadow mb-4">
+
+        <div class="card-header py-3">
+
+            <?= $title ?>
+
+        </div>
+
+        <div class="card-body">
+
+            <div class="row">
+
+                <div class="col-lg-5"></div>
+
+                <div class="col-lg-7 d-flex justify-content-end align-items-center">
+
+                    <form class="form-inline" action="<?= base_url("home/index") ?>" method="get" id="semesterForm">
+                        <div class="form-group mr-2">
+                            <select class="form-control" id="semesterOption" name="semester">
+                                <?php foreach ($semesterList as $semester): ?>
+                                    <?php if ($semester['status'] == 'AKTIF'): ?>
+                                        <option value="<?= $semester['kode'] ?>" selected><?= $semester['nama'] ?> (Aktif)</option>
+                                    <?php else: ?>
+                                        <option value="<?= $semester['kode'] ?>"><?= $semester['nama'] ?></option>
+                                    <?php endif; ?>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                    </form>
+
+                </div>
+
+            </div>
+
+            <div class="table-responsive">
+
+                <table class="table table-bordered" id="repositorySkripsi" width="100%" cellspacing="0">
+
+                    <thead>
+
+                        <tr>
+
+                            <th>No</th>
+
+                            <th>Judul</th>
+
+                            <th>Deskripsi Singkat</th>
+
+                            <th>Penulis</th>
+
+                            <th>Prodi</th>
+
+                            <th>Tanggal Unggah</th>
+
+                            <th>Bidang</th>
+
+                            <th>Kata Kunci</th>
+
+                            <th>Aksi</th>
+
+                        </tr>
+
+                    </thead>
+
+                    <tbody>
+
+                        <?php $counter = 1 ; ?>
+
+                        <?php foreach($makalah as $m): ?>
+
+                            <tr>
+
+                                <td><?= $counter++; ?></td>
+
+                                <td><?= $m['judul'] ?></td>
+
+                                <td><?= $m['deskripsi'] ?></td>
+
+                                <td><?= $m['nama_mahasiswa'] ?></td>
+
+                                <td data-toggle="tooltip" title="<?= $m['nama_prodi'] ?>" data-placement="top"><?= $m['inisial_prodi'] ?></td>
+
+                                <td style="min-width: 8vw"><?= $m['tanggal_upload'] == null ? "-" : date_format(date_create($m['tanggal_upload']), "d-m-Y") ?></td>
+
+                                <td data-toggle="tooltip" title="<?= $m['nama_bidang'] ?>" data-placement="top"><?= $m['inisial_bidang'] ?></td>
+
+                                <td><?= $m['kata_kunci'] ?></td>
+
+                                <td>
+
+                                    <?php if ($m['file_makalah'] != null): ?>
+
+                                        <form action="<?= base_url("home/downloadMakalah/".$m['id']) ?>" method="post">
+
+                                            <button type="submit" class="btn btn-primary" data-toggle="tooltip" title="Unduh" data-placement="top"><i class="fas fa-download"></i></button>
+
+                                        </form>
+
+                                    <?php else: ?>
+
+                                        <button type="button" class="btn btn-primary" disabled><i class="fas fa-download"></i></button>
+
+                                    <?php endif; ?>
+
+                                    
+
+                                </td>
+
+                            </tr>
+
+                        <?php endforeach; ?>
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </div>
+
+<?= $this->endSection(); ?>
+
+
+
+<?= $this->section("scripts"); ?>
+
+    <script src="<?= base_url("assets/js/home/repositorySkripsi.js");?>"></script>
+
+<?= $this->endSection(); ?>
