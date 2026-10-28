@@ -33,8 +33,6 @@
       "Tests\\Support\\": "tests/_support"
     }
   },
-<<<<<<< HEAD
-=======
   "config": {
     "audit": {
       "block-insecure": false
@@ -43,7 +41,6 @@
       "php": "8.1.10"
     }
   },
->>>>>>> dcd27e4a3de861ea90ac937d4d285432ca11c31e
   "scripts": {
     "test": "phpunit"
   },

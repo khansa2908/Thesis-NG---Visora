@@ -71,7 +71,7 @@
 
 <body id="page-top">
     <div id="wrapper">
-        <?= $this->include("layout/sidebar"); ?> 
+        <?= $this->include("layout/sidebar_baru"); ?> 
         <div id="content-wrapper" class="d-flex flex-column">
             <div id="content">
                 <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">

@@ -146,11 +146,10 @@
                         // --- LOGIKA PINTAR: Tentukan Komentar Siapa yang Harus Muncul di Modal ---
                         $komentarSaya = "";
                         if ($idDosenLogin == $sm['dosen_penguji1']) {
-                            $komentarSaya = $sm['komentar'];
+                        $komentarSaya = $sm['komentar'] ?? "";
                         } elseif (isset($sm['dosen_penguji2']) && $idDosenLogin == $sm['dosen_penguji2']) {
-                            $komentarSaya = isset($sm['komentar_2']) ? $sm['komentar_2'] : "";
-                        }
-                    
+                         $komentarSaya = $sm['komentar_2'] ?? "";
+                            }
                     ?>
 
                         <tr>

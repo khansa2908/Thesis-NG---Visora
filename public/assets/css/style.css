@@ -1,74 +1,290 @@
-/* The switch - the box around the slider */
-.switch {
-  position: relative;
-  display: inline-block;
-  width: 60px;
-  height: 34px;
-}
-
-/* Hide default HTML checkbox */
-.switch input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-
-/* The slider */
-.slider {
-  position: absolute;
-  cursor: pointer;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: #ccc;
-  -webkit-transition: 0.4s;
-  transition: 0.4s;
-}
-
-.slider:before {
-  position: absolute;
-  content: "";
-  height: 26px;
-  width: 26px;
-  left: 4px;
-  bottom: 4px;
-  background-color: white;
-  -webkit-transition: 0.4s;
-  transition: 0.4s;
-}
-
-input:checked + .slider {
-  background-color: #2196f3;
-}
-
-input:focus + .slider {
-  box-shadow: 0 0 1px #2196f3;
-}
-
-input:checked + .slider:before {
-  -webkit-transform: translateX(26px);
-  -ms-transform: translateX(26px);
-  transform: translateX(26px);
-}
-
-/* Rounded sliders */
-.slider.round {
-  border-radius: 34px;
-}
-
-.slider.round:before {
-  border-radius: 50%;
-}
-
-@media only screen and (max-width: 1700px) {
-  table.dataTable {
-    font-size: 0.9rem;
-  }
-}
-
-@media only screen and (max-width: 1300px) {
-  table.dataTable {
-    font-size: 0.8rem;
-  }
-}
+/* The switch - the box around the slider */
+
+.switch {
+
+  position: relative;
+
+  display: inline-block;
+
+  width: 60px;
+
+  height: 34px;
+
+}
+
+
+
+/* Hide default HTML checkbox */
+
+.switch input {
+
+  opacity: 0;
+
+  width: 0;
+
+  height: 0;
+
+}
+
+
+
+/* The slider */
+
+.slider {
+
+  position: absolute;
+
+  cursor: pointer;
+
+  top: 0;
+
+  left: 0;
+
+  right: 0;
+
+  bottom: 0;
+
+  background-color: #ccc;
+
+  -webkit-transition: 0.4s;
+
+  transition: 0.4s;
+
+}
+
+
+
+.slider:before {
+
+  position: absolute;
+
+  content: "";
+
+  height: 26px;
+
+  width: 26px;
+
+  left: 4px;
+
+  bottom: 4px;
+
+  background-color: white;
+
+  -webkit-transition: 0.4s;
+
+  transition: 0.4s;
+
+}
+
+
+
+input:checked + .slider {
+
+  background-color: #2196f3;
+
+}
+
+
+
+input:focus + .slider {
+
+  box-shadow: 0 0 1px #2196f3;
+
+}
+
+
+
+input:checked + .slider:before {
+
+  -webkit-transform: translateX(26px);
+
+  -ms-transform: translateX(26px);
+
+  transform: translateX(26px);
+
+}
+
+
+
+/* Rounded sliders */
+
+.slider.round {
+
+  border-radius: 34px;
+
+}
+
+
+
+.slider.round:before {
+
+  border-radius: 50%;
+
+}
+
+
+
+@media only screen and (max-width: 1700px) {
+
+  table.dataTable {
+
+    font-size: 0.9rem;
+
+  }
+
+}
+
+
+
+@media only screen and (max-width: 1300px) {
+
+  table.dataTable {
+
+    font-size: 0.8rem;
+
+  }
+
+}
+
+
+
+/* ======================================
+   SIDEBAR THESIS NG
+   ====================================== */
+
+/* Warna dasar sidebar */
+#accordionSidebar {
+    background: #1C476C !important;
+    background-image: none !important;
+}
+
+/* Logo dan judul */
+#accordionSidebar .sidebar-brand,
+#accordionSidebar .sidebar-brand-text {
+    color: #ffffff !important;
+}
+
+/* Judul kelompok menu */
+#accordionSidebar .sidebar-heading {
+    color: #e2e8d5 !important;
+    font-size: 10px;
+    font-weight: 700;
+}
+
+#accordionSidebar .nav-link.active {
+    background-color: #495057 !important;
+    color: #ffffff !important;
+    font-weight: 700;
+    border-radius: 5px !important;
+    margin-left: 6px !important;
+    margin-right: 6px !important;
+    width: calc(100% - 12px) !important;
+}
+
+/* Semua menu utama: default tanpa shape */
+#accordionSidebar .nav-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px !important;
+    margin: 0 !important;
+    border-radius: 5px;
+    color: #ffffff !important;
+    font-size: 13px;
+    background-color: transparent !important;
+    transition: background-color 0.2s ease;
+}
+
+/* Ikon menu */
+#accordionSidebar .nav-link i {
+    width: 16px;
+    text-align: center;
+    color: #ffffff !important;
+}
+
+/* Hover: hanya efek tipis, bukan shape aktif */
+#accordionSidebar .nav-link:hover {
+    background-color: rgba(255, 255, 255, 0.12) !important;
+    color: #ffffff !important;
+}
+
+#accordionSidebar .nav-link.active {
+    background-color: #495057 !important;
+    color: #ffffff !important;
+    font-weight: 700;
+
+    /* Bentuk shape */
+    border-radius: 5px !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+}
+
+#accordionSidebar .nav-link.active i,
+#accordionSidebar .nav-link.active span {
+    color: #ffffff !important;
+}
+
+/* Garis pemisah */
+#accordionSidebar .sidebar-divider {
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Kotak submenu */
+#accordionSidebar .collapse-inner {
+    background-color: #ffffff !important;
+    border-radius: 6px;
+    padding: 6px;
+}
+
+/* Submenu default: tanpa shape abu-abu */
+#accordionSidebar .collapse-item {
+    display: block;
+    color: #606b50 !important;
+    border-radius: 4px;
+    font-size: 12px;
+    background-color: transparent !important;
+}
+
+/* Hover submenu */
+#accordionSidebar .collapse-item:hover {
+    background-color: #e5e5e5 !important;
+    color: #333333 !important;
+}
+
+/* Hanya submenu yang benar-benar aktif */
+#accordionSidebar .collapse-item.active {
+    background-color: #495057 !important;
+    color: #ffffff !important;
+    font-weight: 700;
+}
+
+/* Tombol perkecil sidebar */
+#accordionSidebar #sidebarToggle {
+    background-color: rgba(255, 255, 255, 0.25);
+}
+
+#accordionSidebar #sidebarToggle:hover {
+    background-color: rgba(255, 255, 255, 0.4);
+}
+
+/* Posisi panah dropdown tetap di ujung kanan */
+#accordionSidebar .nav-item > a.nav-link[data-toggle="collapse"] {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+    padding-right: 12px !important;
+}
+
+/* Panah tetap di posisi sama saat aktif maupun tidak aktif */
+#accordionSidebar .nav-item > a.nav-link[data-toggle="collapse"]::after,
+#accordionSidebar .nav-item > a.nav-link[data-toggle="collapse"].active::after {
+    display: inline-block !important;
+    margin-left: auto !important;
+    margin-right: 0 !important;
+    flex: 0 0 auto !important;
+    float: none !important;
+    position: static !important;
+    transform-origin: center !important;
+}
