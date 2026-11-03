@@ -2877,80 +2877,87 @@ public function simpanMataKuliah()
         return redirect()->to(base_url('unauthorized.php'));
     }
 
-    // Ambil ID program studi Kaprodi.
     $userSession = session()->get('user_session');
     $prodi = $this->prodiModel->find($userSession['id'] ?? null);
     $idProdi = $prodi['id'] ?? null;
 
     if (!$idProdi) {
         return redirect()->back()->withInput()->with('message', [
-            'icon' => 'error',
-            'title' => 'Gagal',
+            'icon' => 'error', 'title' => 'Gagal',
             'text' => 'Program studi akun Kaprodi tidak ditemukan.',
         ]);
     }
 
-    // Ambil data dari formulir.
     $kode = strtoupper(trim((string) $this->request->getPost('kode_matkul')));
     $nama = trim((string) $this->request->getPost('nama_matkul'));
     $namaKurikulum = trim((string) $this->request->getPost('nama_kurikulum'));
     $kategori = $this->request->getPost('kategori');
     $semester = (int) $this->request->getPost('semester_kurikulum');
 
-    // Contoh nama kurikulum: Kurikulum 2024.
-    preg_match('/\b(19|20)\d{2}\b/', $namaKurikulum, $tahunMatch);
-    $tahunBerlaku = isset($tahunMatch[0]) ? (int) $tahunMatch[0] : 0;
+    $fieldErrors = [];
+    if ($kode === '') {
+        $fieldErrors['kode_matkul'] = 'Kode mata kuliah harus diisi.';
+    }
+    if ($nama === '') {
+        $fieldErrors['nama_matkul'] = 'Nama mata kuliah harus diisi.';
+    }
 
-    if (
-        $kode === '' ||
-        $nama === '' ||
-        $namaKurikulum === '' ||
-        $tahunBerlaku < 1900 ||
-        !in_array($kategori, ['Wajib', 'Pilihan'], true) ||
-        $semester < 1 ||
-        $semester > 8
-    ) {
-        return redirect()->back()->withInput()->with('message', [
-            'icon' => 'error',
-            'title' => 'Data belum valid',
-            'text' => 'Isi kurikulum dengan nama yang memuat tahun, misalnya Kurikulum 2024. Semester harus 1 sampai 8.',
-        ]);
+    if ($fieldErrors) {
+        return redirect()->back()->withInput()
+            ->with('field_errors', $fieldErrors)
+            ->with('form_type', 'add');
     }
 
     $db = \Config\Database::connect();
 
-    // Cek apakah kode mata kuliah sudah digunakan.
-    $existing = $db->table('mata_kuliah')
+    $existingCode = $db->table('mata_kuliah')
         ->where('kode_matkul', $kode)
-        ->get()
-        ->getRowArray();
+        ->get()->getRowArray();
 
-    if ($existing) {
+    if ($existingCode) {
+        return redirect()->back()->withInput()
+            ->with('field_errors', ['kode_matkul' => 'Kode mata kuliah sudah ada.'])
+            ->with('form_type', 'add');
+    }
+
+    $existingName = $db->table('mata_kuliah')
+        ->where('id_prodi', $idProdi)
+        ->where('nama_matkul', $nama)
+        ->get()->getRowArray();
+
+    if ($existingName) {
+        return redirect()->back()->withInput()
+            ->with('field_errors', ['nama_matkul' => 'Nama mata kuliah sudah ada.'])
+            ->with('form_type', 'add');
+    }
+
+    preg_match('/\b(19|20)\d{2}\b/', $namaKurikulum, $tahunMatch);
+    $tahunBerlaku = isset($tahunMatch[0]) ? (int) $tahunMatch[0] : 0;
+
+    if (
+        $namaKurikulum === '' || $tahunBerlaku < 1900 ||
+        !in_array($kategori, ['Wajib', 'Pilihan'], true) ||
+        $semester < 1 || $semester > 8
+    ) {
         return redirect()->back()->withInput()->with('message', [
-            'icon' => 'error',
-            'title' => 'Kode sudah digunakan',
-            'text' => 'Gunakan kode mata kuliah yang berbeda.',
+            'icon' => 'warning', 'title' => 'Data belum valid',
+            'text' => 'Periksa nama kurikulum, kategori, dan semester. Semester harus 1 sampai 8.',
         ]);
     }
 
-    // Cari kurikulum berdasarkan nama dan prodi.
     $kurikulum = $db->table('kurikulum')
         ->where('nama_kurikulum', $namaKurikulum)
         ->where('id_prodi', $idProdi)
-        ->get()
-        ->getRowArray();
+        ->get()->getRowArray();
 
     $db->transBegin();
-
     try {
-        // Jika kurikulum belum ada, buat data kurikulum baru.
         if (!$kurikulum) {
             $db->table('kurikulum')->insert([
                 'nama_kurikulum' => $namaKurikulum,
                 'tahun_berlaku' => $tahunBerlaku,
                 'id_prodi' => $idProdi,
             ]);
-
             $idKurikulum = $db->insertID();
         } else {
             $idKurikulum = $kurikulum['id_kurikulum'];
@@ -2960,14 +2967,11 @@ public function simpanMataKuliah()
             throw new \RuntimeException('ID kurikulum gagal diperoleh.');
         }
 
-        // Simpan identitas mata kuliah.
         $db->table('mata_kuliah')->insert([
             'kode_matkul' => $kode,
             'nama_matkul' => $nama,
             'id_prodi' => $idProdi,
         ]);
-
-        // Simpan hubungan kurikulum, kategori, dan semester.
         $db->table('detail_kurikulum')->insert([
             'id_kurikulum' => $idKurikulum,
             'kode_matkul' => $kode,
@@ -2978,31 +2982,28 @@ public function simpanMataKuliah()
         if ($db->transStatus() === false) {
             throw new \RuntimeException('Penyimpanan database gagal.');
         }
-
         $db->transCommit();
     } catch (\Throwable $e) {
         $db->transRollback();
+        log_message('error', 'Simpan mata kuliah gagal: ' . $e->getMessage());
 
-        log_message(
-            'error',
-            'Simpan mata kuliah gagal: ' . $e->getMessage()
-        );
+        if ((string) $e->getCode() === '1062' || strpos($e->getMessage(), 'Duplicate entry') !== false) {
+            return redirect()->back()->withInput()
+                ->with('field_errors', ['kode_matkul' => 'Kode mata kuliah sudah ada.'])
+                ->with('form_type', 'add');
+        }
 
         return redirect()->back()->withInput()->with('message', [
-            'icon' => 'error',
-            'title' => 'Gagal menyimpan',
-            'text' => 'Data gagal disimpan. Periksa log aplikasi.',
+            'icon' => 'error', 'title' => 'Gagal menambahkan mata kuliah',
+            'text' => 'Data mata kuliah gagal disimpan. Silakan coba kembali.',
         ]);
     }
 
-    return redirect()->to(base_url('Kaprodi/mataKuliah'))
-        ->with('message', [
-            'icon' => 'success',
-            'title' => 'Berhasil',
-            'text' => 'Mata kuliah berhasil ditambahkan.',
-        ]);
+    return redirect()->to(base_url('Kaprodi/mataKuliah'))->with('message', [
+        'icon' => 'success', 'title' => 'Berhasil menambahkan mata kuliah',
+        'text' => 'Data mata kuliah berhasil ditambahkan.',
+    ]);
 }
-
 
 /**
  * API GET: Mengambil daftar mata kuliah berdasarkan prodi Kaprodi.
@@ -3192,120 +3193,151 @@ public function updateMataKuliah()
     $idProdi = $prodi['id'] ?? null;
 
     if (!$idProdi) {
-        return redirect()->back()->with('message', [
-            'icon' => 'error',
-            'title' => 'Gagal',
-            'text' => 'Program studi tidak ditemukan.',
+        return redirect()->back()->withInput()->with('message', [
+            'icon' => 'error', 'title' => 'Gagal',
+            'text' => 'Program studi akun Kaprodi tidak ditemukan.',
         ]);
     }
 
+    // Kode lama dipakai untuk menemukan data, sedangkan kode baru disimpan.
+    $kodeLama = strtoupper(trim((string) $this->request->getPost('kode_matkul_lama')));
     $kode = strtoupper(trim((string) $this->request->getPost('kode_matkul')));
     $nama = trim((string) $this->request->getPost('nama_matkul'));
     $kategori = $this->request->getPost('kategori');
     $namaKurikulum = trim((string) $this->request->getPost('nama_kurikulum'));
     $semester = (int) $this->request->getPost('semester_kurikulum');
 
-    if (
-        $kode === '' ||
-        $nama === '' ||
-        $namaKurikulum === '' ||
-        !in_array($kategori, ['Wajib', 'Pilihan'], true) ||
-        $semester < 1 ||
-        $semester > 8
-    ) {
-        return redirect()->back()->with('message', [
-            'icon' => 'error',
-            'title' => 'Data tidak valid',
-            'text' => 'Periksa kembali isian mata kuliah.',
-        ]);
+    $fieldErrors = [];
+    if ($kode === '') {
+        $fieldErrors['kode_matkul'] = 'Kode mata kuliah harus diisi.';
+    }
+    if ($nama === '') {
+        $fieldErrors['nama_matkul'] = 'Nama mata kuliah harus diisi.';
+    }
+    if ($fieldErrors) {
+        return redirect()->back()->withInput()
+            ->with('field_errors', $fieldErrors)
+            ->with('form_type', 'edit')
+            ->with('edit_code', $kodeLama);
     }
 
     $db = \Config\Database::connect();
-
-    $kurikulum = $db->table('kurikulum')
-        ->where('nama_kurikulum', $namaKurikulum)
+    $mataKuliah = $db->table('mata_kuliah')
+        ->where('kode_matkul', $kodeLama)
         ->where('id_prodi', $idProdi)
-        ->get()
-        ->getRowArray();
+        ->get()->getRowArray();
 
-    if (!$kurikulum) {
-        preg_match('/\b(19|20)\d{2}\b/', $namaKurikulum, $tahunMatch);
-
-        if (!isset($tahunMatch[0])) {
-            return redirect()->back()->with('message', [
-                'icon' => 'error',
-                'title' => 'Kurikulum tidak valid',
-                'text' => 'Nama kurikulum harus mencantumkan tahun, misalnya Kurikulum 2024.',
-            ]);
-        }
-
-        $db->table('kurikulum')->insert([
-            'id_prodi' => $idProdi,
-            'nama_kurikulum' => $namaKurikulum,
-            'tahun_berlaku' => (int) $tahunMatch[0],
+    if (!$mataKuliah) {
+        return redirect()->back()->with('message', [
+            'icon' => 'error', 'title' => 'Mata kuliah tidak ditemukan',
+            'text' => 'Data mata kuliah yang akan diedit tidak ditemukan.',
         ]);
+    }
 
-        $idKurikulum = $db->insertID();
-    } else {
-        $idKurikulum = $kurikulum['id_kurikulum'];
+    if ($kode !== $kodeLama) {
+        $existingCode = $db->table('mata_kuliah')
+            ->where('kode_matkul', $kode)
+            ->get()->getRowArray();
+        if ($existingCode) {
+            return redirect()->back()->withInput()
+                ->with('field_errors', ['kode_matkul' => 'Kode mata kuliah sudah digunakan.'])
+                ->with('form_type', 'edit')
+                ->with('edit_code', $kodeLama);
+        }
+    }
+
+    $existingName = $db->table('mata_kuliah')
+        ->where('id_prodi', $idProdi)
+        ->where('nama_matkul', $nama)
+        ->where('kode_matkul !=', $kodeLama)
+        ->get()->getRowArray();
+
+    if ($existingName) {
+        return redirect()->back()->withInput()
+            ->with('field_errors', ['nama_matkul' => 'Nama mata kuliah sudah ada.'])
+            ->with('form_type', 'edit')
+            ->with('edit_code', $kodeLama);
+    }
+
+    if (
+        $namaKurikulum === '' ||
+        !in_array($kategori, ['Wajib', 'Pilihan'], true) ||
+        $semester < 1 || $semester > 8
+    ) {
+        return redirect()->back()->withInput()->with('message', [
+            'icon' => 'warning', 'title' => 'Data belum valid',
+            'text' => 'Periksa kembali kurikulum, kategori, dan semester. Semester harus 1 sampai 8.',
+        ]);
+    }
+
+    preg_match('/\b(19|20)\d{2}\b/', $namaKurikulum, $tahunMatch);
+    if (!isset($tahunMatch[0])) {
+        return redirect()->back()->withInput()->with('message', [
+            'icon' => 'warning', 'title' => 'Kurikulum tidak valid',
+            'text' => 'Nama kurikulum harus mencantumkan tahun, misalnya Kurikulum 2024.',
+        ]);
     }
 
     $db->transBegin();
-
     try {
+        $kurikulum = $db->table('kurikulum')
+            ->where('nama_kurikulum', $namaKurikulum)
+            ->where('id_prodi', $idProdi)
+            ->get()->getRowArray();
+
+        if (!$kurikulum) {
+            $db->table('kurikulum')->insert([
+                'id_prodi' => $idProdi,
+                'nama_kurikulum' => $namaKurikulum,
+                'tahun_berlaku' => (int) $tahunMatch[0],
+            ]);
+            $idKurikulum = $db->insertID();
+        } else {
+            $idKurikulum = $kurikulum['id_kurikulum'];
+        }
+
+        if (!$idKurikulum) {
+            throw new \RuntimeException('ID kurikulum gagal diperoleh.');
+        }
+
+        // Ubah kode pada tabel utama. Jika ada foreign key, relasinya perlu
+        // menggunakan ON UPDATE CASCADE agar perubahan kode ikut diterapkan.
         $db->table('mata_kuliah')
-            ->where('kode_matkul', $kode)
+            ->where('kode_matkul', $kodeLama)
             ->where('id_prodi', $idProdi)
             ->update([
+                'kode_matkul' => $kode,
                 'nama_matkul' => $nama,
             ]);
 
-        $detail = $db->table('detail_kurikulum')
-            ->where('kode_matkul', $kode)
-            ->get()
-            ->getRowArray();
-
-        if ($detail) {
-            $db->table('detail_kurikulum')
-                ->where('kode_matkul', $kode)
-                ->update([
-                    'id_kurikulum' => $idKurikulum,
-                    'kategori' => $kategori,
-                    'semester_kurikulum' => $semester,
-                ]);
-        } else {
-            $db->table('detail_kurikulum')->insert([
-                'id_kurikulum' => $idKurikulum,
+        // Jika relasi tidak otomatis berubah karena cascade, perbarui detail.
+        $db->table('detail_kurikulum')
+            ->where('kode_matkul', $kodeLama)
+            ->update([
                 'kode_matkul' => $kode,
+                'id_kurikulum' => $idKurikulum,
                 'kategori' => $kategori,
                 'semester_kurikulum' => $semester,
             ]);
-        }
 
         if ($db->transStatus() === false) {
-            throw new \RuntimeException('Pembaruan gagal.');
+            throw new \RuntimeException('Pembaruan database gagal. Periksa relasi foreign key kode_matkul.');
         }
-
         $db->transCommit();
-
-        return redirect()->to(base_url('Kaprodi/mataKuliah'))
-            ->with('message', [
-                'icon' => 'success',
-                'title' => 'Berhasil',
-                'text' => 'Mata kuliah berhasil diperbarui.',
-            ]);
     } catch (\Throwable $e) {
         $db->transRollback();
         log_message('error', 'Update mata kuliah gagal: ' . $e->getMessage());
-
-        return redirect()->back()->with('message', [
-            'icon' => 'error',
-            'title' => 'Gagal',
-            'text' => 'Mata kuliah gagal diperbarui.',
+        return redirect()->back()->withInput()->with('message', [
+            'icon' => 'error', 'title' => 'Gagal mengedit mata kuliah',
+            'text' => 'Perubahan gagal disimpan. Periksa relasi kode mata kuliah pada database.',
         ]);
     }
-}
 
+    return redirect()->to(base_url('Kaprodi/mataKuliah'))->with('message', [
+        'icon' => 'success', 'title' => 'Berhasil mengedit mata kuliah',
+        'text' => 'Data mata kuliah berhasil diperbarui.',
+    ]);
+}
 
 public function hapusMataKuliah()
 {
@@ -3319,72 +3351,57 @@ public function hapusMataKuliah()
 
     if (!$idProdi) {
         return redirect()->back()->with('message', [
-            'icon' => 'error',
-            'title' => 'Gagal',
-            'text' => 'Program studi tidak ditemukan.',
+            'icon' => 'error', 'title' => 'Gagal',
+            'text' => 'Program studi akun Kaprodi tidak ditemukan.',
         ]);
     }
 
     $kode = strtoupper(trim((string) $this->request->getPost('kode_matkul')));
-
     if ($kode === '') {
         return redirect()->back()->with('message', [
-            'icon' => 'error',
-            'title' => 'Gagal',
-            'text' => 'Kode mata kuliah tidak ditemukan.',
+            'icon' => 'warning', 'title' => 'Kode mata kuliah tidak ditemukan',
+            'text' => 'Pilih mata kuliah yang akan dihapus.',
         ]);
     }
 
     $db = \Config\Database::connect();
-
     $mataKuliah = $db->table('mata_kuliah')
         ->where('kode_matkul', $kode)
         ->where('id_prodi', $idProdi)
-        ->get()
-        ->getRowArray();
+        ->get()->getRowArray();
 
     if (!$mataKuliah) {
         return redirect()->back()->with('message', [
-            'icon' => 'error',
-            'title' => 'Tidak ditemukan',
-            'text' => 'Mata kuliah tidak ditemukan pada program studi ini.',
+            'icon' => 'error', 'title' => 'Mata kuliah tidak ditemukan',
+            'text' => 'Data mata kuliah yang akan dihapus tidak ditemukan.',
         ]);
     }
 
     $db->transBegin();
-
     try {
-        $db->table('detail_kurikulum')
-            ->where('kode_matkul', $kode)
-            ->delete();
-
+        $db->table('detail_kurikulum')->where('kode_matkul', $kode)->delete();
         $db->table('mata_kuliah')
             ->where('kode_matkul', $kode)
             ->where('id_prodi', $idProdi)
             ->delete();
 
         if ($db->transStatus() === false) {
-            throw new \RuntimeException('Penghapusan gagal.');
+            throw new \RuntimeException('Penghapusan database gagal.');
         }
-
         $db->transCommit();
-
-        return redirect()->to(base_url('Kaprodi/mataKuliah'))
-            ->with('message', [
-                'icon' => 'success',
-                'title' => 'Berhasil',
-                'text' => 'Mata kuliah berhasil dihapus.',
-            ]);
     } catch (\Throwable $e) {
         $db->transRollback();
         log_message('error', 'Hapus mata kuliah gagal: ' . $e->getMessage());
-
         return redirect()->back()->with('message', [
-            'icon' => 'error',
-            'title' => 'Gagal',
-            'text' => 'Mata kuliah gagal dihapus.',
+            'icon' => 'error', 'title' => 'Gagal menghapus mata kuliah',
+            'text' => 'Data mata kuliah gagal dihapus. Silakan coba kembali.',
         ]);
     }
+
+    return redirect()->to(base_url('Kaprodi/mataKuliah'))->with('message', [
+        'icon' => 'success', 'title' => 'Berhasil menghapus mata kuliah',
+        'text' => 'Data mata kuliah berhasil dihapus.',
+    ]);
 }
 
 /**

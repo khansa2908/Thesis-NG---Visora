@@ -223,8 +223,8 @@ $mkWajibDipilih = $sudahLulusSemua
                                 Proyek Akhir
                             </option>
 
-                            <option value="Publikasi Ilmiah">
-                                Publikasi Ilmiah
+                            <option value="Publikasi">
+                                Publikasi 
                             </option>
 
                         </select>
@@ -938,6 +938,19 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
     }
+    // BINDING STATE JENIS TUGAS AKHIR
+
+    const jenisTA = document.getElementById('jenis_ta');
+
+    let selectedJenisTA = jenisTA ? jenisTA.value : '';
+
+    if (jenisTA) {
+        jenisTA.addEventListener('change', function () {
+        selectedJenisTA = this.value;
+        console.log('Jenis TA dipilih:', selectedJenisTA);
+        });
+    }
+    
 
 
     // =========================================

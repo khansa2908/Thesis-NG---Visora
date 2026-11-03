@@ -3,7 +3,12 @@
 
 <?= $this->section("content"); ?>
 
-<?php $message = session()->getFlashdata("message"); ?>
+<?php
+$message = session()->getFlashdata("message");
+$fieldErrors = session()->getFlashdata("field_errors") ?? [];
+$formType = session()->getFlashdata("form_type");
+$editCode = session()->getFlashdata("edit_code");
+?>
 
 <?php if ($message) : ?>
     <div id="flashdata" data-open="true">
@@ -175,12 +180,13 @@
                         </label>
 
                         <input type="text"
-                               class="form-control"
+                               class="form-control <?= isset($fieldErrors['kode_matkul']) ? 'is-invalid' : '' ?>"
                                id="kodeMataKuliah"
                                name="kode_matkul"
                                maxlength="20"
                                placeholder="Contoh: IT201"
-                               required>
+                               value="<?= esc(old('kode_matkul') ?? '') ?>">
+                        <small class="text-danger" id="errorKodeTambah"><?= esc($fieldErrors['kode_matkul'] ?? '') ?></small>
                     </div>
 
                     <div class="form-group">
@@ -189,12 +195,13 @@
                         </label>
 
                         <input type="text"
-                               class="form-control"
+                               class="form-control <?= isset($fieldErrors['nama_matkul']) ? 'is-invalid' : '' ?>"
                                id="namaMataKuliah"
                                name="nama_matkul"
                                maxlength="150"
                                placeholder="Masukkan nama mata kuliah"
-                               required>
+                               value="<?= esc(old('nama_matkul') ?? '') ?>">
+                        <small class="text-danger" id="errorNamaTambah"><?= esc($fieldErrors['nama_matkul'] ?? '') ?></small>
                     </div>
 
                     <div class="form-group">
@@ -305,16 +312,18 @@
                     <div class="modal-body">
 
                         <div class="form-group">
-                            <label for="kodeEdit<?= $index ?>">
-                                Kode Mata Kuliah
-                            </label>
+                            <label for="kodeEdit<?= $index ?>">Kode Mata Kuliah</label>
+
+                            <input type="hidden"
+                                name="kode_matkul_lama"
+                                value="<?= esc($mk['kode_matkul'] ?? '') ?>">
 
                             <input type="text"
-                                   class="form-control"
-                                   id="kodeEdit<?= $index ?>"
-                                   name="kode_matkul"
-                                   value="<?= esc($mk['kode_matkul'] ?? '') ?>"
-                                   readonly>
+                                class="form-control"
+                                id="kodeEdit<?= $index ?>"
+                                name="kode_matkul"
+                                maxlength="20"
+                                value="<?= esc($mk['kode_matkul'] ?? '') ?>">
                         </div>
 
                         <div class="form-group">
@@ -323,12 +332,14 @@
                             </label>
 
                             <input type="text"
-                                   class="form-control"
+                                   class="form-control <?= ($formType === 'edit' && $editCode === ($mk['kode_matkul'] ?? '') && isset($fieldErrors['nama_matkul'])) ? 'is-invalid' : '' ?>"
                                    id="namaEdit<?= $index ?>"
                                    name="nama_matkul"
                                    maxlength="150"
-                                   value="<?= esc($mk['nama_matkul'] ?? '') ?>"
-                                   required>
+                                   value="<?= esc(($formType === 'edit' && $editCode === ($mk['kode_matkul'] ?? '') && old('nama_matkul') !== null) ? old('nama_matkul') : ($mk['nama_matkul'] ?? '')) ?>">
+                            <?php if ($formType === 'edit' && $editCode === ($mk['kode_matkul'] ?? '')) : ?>
+                                <small class="text-danger"><?= esc($fieldErrors['nama_matkul'] ?? '') ?></small>
+                            <?php endif; ?>
                         </div>
 
                         <div class="form-group">
@@ -419,6 +430,64 @@
 <?= $this->section("scripts"); ?>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+$(function () {
+    function setError(input, errorElement, message) {
+        $(input).toggleClass('is-invalid', !!message);
+        $(errorElement).text(message || '');
+    }
+
+    $('#formTambahMataKuliah').on('submit', function (e) {
+        const kode = $('#kodeMataKuliah').val().trim();
+        const nama = $('#namaMataKuliah').val().trim();
+        let valid = true;
+
+        setError('#kodeMataKuliah', '#errorKodeTambah',
+            kode ? '' : 'Kode mata kuliah harus diisi.');
+        setError('#namaMataKuliah', '#errorNamaTambah',
+            nama ? '' : 'Nama mata kuliah harus diisi.');
+
+        if (!kode || !nama) {
+            e.preventDefault();
+            valid = false;
+        }
+        return valid;
+    });
+
+    $('#kodeMataKuliah, #namaMataKuliah').on('input', function () {
+        if ($(this).val().trim()) {
+            $(this).removeClass('is-invalid');
+            if (this.id === 'kodeMataKuliah') $('#errorKodeTambah').text('');
+            if (this.id === 'namaMataKuliah') $('#errorNamaTambah').text('');
+        }
+    });
+
+    // Validasi nama pada modal edit agar pesan tampil tepat di bawah kolom.
+    $('form[action*="updateMataKuliah"]').on('submit', function (e) {
+        const input = $(this).find('input[name="nama_matkul"]');
+        let error = input.siblings('.text-danger');
+        if (!input.val().trim()) {
+            input.addClass('is-invalid');
+            if (!error.length) input.after('<small class="text-danger">Nama mata kuliah harus diisi.</small>');
+            else error.text('Nama mata kuliah harus diisi.');
+            e.preventDefault();
+        }
+    });
+
+    // Buka kembali modal yang berisi kesalahan setelah validasi dari server.
+    const formType = <?= json_encode($formType) ?>;
+    const editCode = <?= json_encode($editCode) ?>;
+    if (formType === 'add') {
+        $('#tambahMataKuliah').modal('show');
+    } else if (formType === 'edit' && editCode) {
+        $('.modal[id^="editMataKuliah"]').each(function () {
+            const currentCode = $(this).find('input[name="kode_matkul"]').val();
+            if (currentCode === editCode) $(this).modal('show');
+        });
+    }
+});
+</script>
 
 <script>
 $(document).on('submit', '.form-hapus-matkul', function (e) {

@@ -395,5 +395,6 @@
 <?= $this->section("scripts"); ?>
 
     <script src="<?= base_url("assets/js/mahasiswa/skripsi.js");?>"></script>
+    <script src="<?= base_url('assets/js/mahasiswa/judul-uppercase.js'); ?>"></script>
 
 <?= $this->endSection(); ?>

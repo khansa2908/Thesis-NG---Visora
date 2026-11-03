@@ -239,6 +239,29 @@
         });
     });
     </script>
+    <script src="<?= base_url("assets/vendor/sweetalert2/sweetalert2.all.js") ?>"></script>
+
+    <!-- Script notifikasi flashdata -->
+    <script>
+             $(document).ready(function () {
+            const flashdata = $('#flashdata');
+
+                if (flashdata.length && flashdata.data('open') === true) {
+                    const icon = $('#icon').text().trim();
+                    const title = $('#title').text().trim();
+                    const text = $('#text').text().trim();
+
+                Swal.fire({
+                    icon: icon || 'info',
+                    title: title,
+                    text: text,
+                    confirmButtonText: 'OK'
+                 });
+                }
+            });
+    </script>
+
+<?= $this->renderSection('scripts'); ?>
 
     <?= $this->renderSection('scripts'); ?>
 </body>

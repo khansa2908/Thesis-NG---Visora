@@ -521,5 +521,6 @@
     <script src="<?= base_url("assets/vendor/daterangepicker/daterangepicker.js") ?>"></script>
 
     <script src="<?= base_url("assets/js/mahasiswa/proposal.js");?>"></script>
+    <script src="<?= base_url('assets/js/mahasiswa/judul-uppercase.js'); ?>"></script>
 
 <?= $this->endSection(); ?>
