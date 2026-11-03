@@ -140,144 +140,187 @@ class Mahasiswa extends BaseController
 
 
     public function pengajuanPenulisanSkripsi()
-    {
-
-        //autentikasi
-
-        if (!$this->authenticate(["mahasiswa"])) {
-
-            return redirect()->to(base_url("unauthorized.php"));
-
-        }
-
-
-
-        $mahasiswa = $this->mahasiswaModel->find(session()->get("user_session")['id']);
-
-        $dosen = $this->dosenModel->getDosenByProdi($mahasiswa['id_prodi']);
-
-
-
-        $data = [
-
-            'title' => 'Pengajuan Penulisan Skripsi',
-
-            'mahasiswa' => $mahasiswa,
-
-            'dosen' => $dosen,
-
-        ];
-
-
-
-        return view("mahasiswa/pengajuan_penulisan_skripsi", $data);
-
+{
+    // Autentikasi mahasiswa
+    if (!$this->authenticate(["mahasiswa"])) {
+        return redirect()->to(base_url("unauthorized.php"));
     }
 
+    // Ambil data mahasiswa yang sedang login
+    $mahasiswa = $this->mahasiswaModel->find(
+        session()->get("user_session")['id']
+    );
+
+    // Ambil data dosen berdasarkan program studi mahasiswa
+    $dosen = $this->dosenModel->getDosenByProdi(
+        $mahasiswa['id_prodi']
+    );
+
+    // Ambil mata kuliah berdasarkan program studi mahasiswa
+    $mataKuliahModel = new \App\Models\MataKuliahModel();
+
+    $mataKuliah = $mataKuliahModel->getMataKuliahByProdi(
+        (int) $mahasiswa['id_prodi']
+    );
+
+    // Kirim data ke halaman View
+    $data = [
+        'title' => 'Pengajuan Penulisan Skripsi',
+        'mahasiswa' => $mahasiswa,
+        'dosen' => $dosen,
+        'mataKuliah' => $mataKuliah,
+    ];
+
+    return view("mahasiswa/pengajuan_penulisan_skripsi", $data);
+}
 
 
-    public function insertPengajuanPenulisanSkripsi($npm)
-    {
+   
+public function insertPengajuanPenulisanSkripsi($npm)
+{
+    // Autentikasi mahasiswa
+    if (!$this->authenticate(["mahasiswa"])) {
+        return redirect()->to(base_url("unauthorized.php"));
+    }
 
-        //autentikasi
+    // Mencegah akses langsung melalui metode selain POST
+    if ($this->request->getMethod() != 'post') {
+        return redirect()->back();
+    }
 
-        if (!$this->authenticate(["mahasiswa"])) {
+    // Ambil data mahasiswa
+    $mahasiswa = $this->mahasiswaModel->find($npm);
 
-            return redirect()->to(base_url("unauthorized.php"));
-
-        }
-
-
-
-        //buat mencegah access langsung dari link
-
-        if ($this->request->getMethod() != 'post') {
-
-            return redirect()->back();
-
-        }
-
-
-
-        $mahasiswa = $this->mahasiswaModel->find($npm);
-
-
-
-        $fileKhsLama = $this->request->getFile("inputKhs");
-
-        $fileKhsBaru = $mahasiswa['file_khs'];
-
-        if ($fileKhsLama != null) {
-
-            $fileKhsBaru = "KHS_" . $npm . "_" . $this->generateTimeStamp() . "." . $fileKhsLama->getClientExtension();
-
-            $fileKhsLama->move("folderKHS", $fileKhsBaru);
-
-        }
-
-
-
-        $fileKrsLama = $this->request->getFile("inputKrs");
-
-        $fileKrsBaru = $mahasiswa['file_krs'];
-
-        if ($fileKrsLama != null) {
-
-            $fileKrsBaru = "KRS_" . $npm . "_" . $this->generateTimeStamp() . "." . $fileKrsLama->getClientExtension();
-
-            $fileKrsLama->move("folderKRS", $fileKrsBaru);
-
-        }
-
-
-
-        $filePengajuanSkripsiLama = $this->request->getFile("inputPersetujuanSkripsi");
-
-        $filePengajuanSkripsiBaru = $mahasiswa['file_persetujuan_skripsi'];
-
-        if ($filePengajuanSkripsiLama != null) {
-
-            $filePengajuanSkripsiBaru = "PersetujuanSkripsi_" . $npm . "_" . $this->generateTimeStamp() . "." . $filePengajuanSkripsiLama->getClientExtension();
-
-            $filePengajuanSkripsiLama->move("folderPersetujuanSkripsi", $filePengajuanSkripsiBaru);
-
-        }
-
-
-
-        $this->mahasiswaModel->update($npm, [
-
-            "file_khs" => $fileKhsBaru,
-
-            "file_krs" => $fileKrsBaru,
-
-            "file_persetujuan_skripsi" => $filePengajuanSkripsiBaru,
-
-            "sks_lulus" => $this->request->getPost("sks_lulus", FILTER_SANITIZE_SPECIAL_CHARS),
-
-            "pembimbing_akademik" => $this->request->getPost("pembimbing_akademik"),
-
-            "mk_sedang_diambil" => $this->request->getPost("mk_sedang_diambil", FILTER_SANITIZE_SPECIAL_CHARS),
-
-            "mk_akan_diambil" => $this->request->getPost("mk_akan_diambil", FILTER_SANITIZE_SPECIAL_CHARS),
-
-            "status_persetujuan_skripsi" => null,
-
-            'tanggal_pengajuan_skripsi' => date_format(Time::now('Asia/Jakarta', 'en_us'), 'Y-m-d H:i:s'),
-
+    if (!$mahasiswa) {
+        return redirect()->back()->with('message', [
+            "icon" => "error",
+            "title" => "Data Tidak Ditemukan",
+            "text" => "Data mahasiswa tidak ditemukan."
         ]);
-
-
-
-        session()->setFlashdata("message", ["icon" => "success", "title" => "Upload Data Berhasil", "text" => "Data Pengajuan Penulisan Skripsi Berhasil diunggah"]);
-
-        return redirect()->to(base_url("mahasiswa/pengajuanPenulisanSkripsi"));
-
     }
 
+    // ==============================
+    // UPLOAD FILE KHS
+    // ==============================
 
+    $fileKhsLama = $this->request->getFile("inputKhs");
+    $fileKhsBaru = $mahasiswa['file_khs'];
 
+    if ($fileKhsLama != null && $fileKhsLama->isValid() && !$fileKhsLama->hasMoved()) {
 
+        $fileKhsBaru = "KHS_" . $npm . "_" .
+            $this->generateTimeStamp() . "." .
+            $fileKhsLama->getClientExtension();
+
+        $fileKhsLama->move("folderKHS", $fileKhsBaru);
+    }
+
+    // ==============================
+    // UPLOAD FILE KRS
+    // ==============================
+
+    $fileKrsLama = $this->request->getFile("inputKrs");
+    $fileKrsBaru = $mahasiswa['file_krs'];
+
+    if ($fileKrsLama != null && $fileKrsLama->isValid() && !$fileKrsLama->hasMoved()) {
+
+        $fileKrsBaru = "KRS_" . $npm . "_" .
+            $this->generateTimeStamp() . "." .
+            $fileKrsLama->getClientExtension();
+
+        $fileKrsLama->move("folderKRS", $fileKrsBaru);
+    }
+
+    // ==============================
+    // UPLOAD PERSETUJUAN SKRIPSI
+    // ==============================
+
+    $filePengajuanSkripsiLama = $this->request->getFile("inputPersetujuanSkripsi");
+    $filePengajuanSkripsiBaru = $mahasiswa['file_persetujuan_skripsi'];
+
+    if (
+        $filePengajuanSkripsiLama != null &&
+        $filePengajuanSkripsiLama->isValid() &&
+        !$filePengajuanSkripsiLama->hasMoved()
+    ) {
+
+        $filePengajuanSkripsiBaru = "PersetujuanSkripsi_" . $npm . "_" .
+            $this->generateTimeStamp() . "." .
+            $filePengajuanSkripsiLama->getClientExtension();
+
+        $filePengajuanSkripsiLama->move(
+            "folderPersetujuanSkripsi",
+            $filePengajuanSkripsiBaru
+        );
+    }
+
+    // ==============================
+    // AMBIL DATA FORM
+    // ==============================
+
+    $sksLulus = $this->request->getPost(
+        "sks_lulus",
+        FILTER_SANITIZE_SPECIAL_CHARS
+    );
+
+    $pembimbingAkademik = $this->request->getPost(
+        "pembimbing_akademik"
+    );
+
+    // Mengambil hasil pilihan checkbox mata kuliah
+    $mkSedangDiambil = $this->request->getPost(
+        "mk_sedang_diambil",
+        FILTER_SANITIZE_SPECIAL_CHARS
+    );
+
+    $mkAkanDiambil = $this->request->getPost(
+        "mk_akan_diambil",
+        FILTER_SANITIZE_SPECIAL_CHARS
+    );
+
+    // ==============================
+    // SIMPAN DATA MAHASISWA
+    // ==============================
+
+    $this->mahasiswaModel->update($npm, [
+
+        "file_khs" => $fileKhsBaru,
+
+        "file_krs" => $fileKrsBaru,
+
+        "file_persetujuan_skripsi" => $filePengajuanSkripsiBaru,
+
+        "sks_lulus" => $sksLulus,
+
+        "pembimbing_akademik" => $pembimbingAkademik,
+
+        "mk_sedang_diambil" => $mkSedangDiambil,
+
+        "mk_akan_diambil" => $mkAkanDiambil,
+
+        "status_persetujuan_skripsi" => null,
+
+        "tanggal_pengajuan_skripsi" => date_format(
+            Time::now('Asia/Jakarta', 'en_us'),
+            'Y-m-d H:i:s'
+        ),
+
+    ]);
+
+    // ==============================
+    // PESAN BERHASIL
+    // ==============================
+
+    session()->setFlashdata("message", [
+        "icon" => "success",
+        "title" => "Upload Data Berhasil",
+        "text" => "Data Pengajuan Penulisan Skripsi Berhasil diunggah"
+    ]);
+
+    return redirect()->to(
+        base_url("mahasiswa/pengajuanPenulisanSkripsi")
+    );
+}
 
 
 

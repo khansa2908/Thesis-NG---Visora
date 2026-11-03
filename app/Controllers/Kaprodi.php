@@ -3387,6 +3387,233 @@ public function hapusMataKuliah()
     }
 }
 
+/**
+ * API PUT: Memperbarui data mata kuliah.
+ * URL: PUT /api/kaprodi/mata-kuliah/{kode}
+ */
+public function apiUpdateMataKuliah($kode)
+{
+    if (!$this->authenticate(['kaprodi'])) {
+        return $this->response
+            ->setStatusCode(401)
+            ->setJSON([
+                'status' => 'error',
+                'message' => 'Silakan login sebagai Kaprodi.',
+            ]);
+    }
+
+    $userSession = session()->get('user_session');
+    $prodi = $this->prodiModel->find($userSession['id'] ?? null);
+    $idProdi = $prodi['id'] ?? null;
+
+    if (!$idProdi) {
+        return $this->response
+            ->setStatusCode(403)
+            ->setJSON([
+                'status' => 'error',
+                'message' => 'Program studi tidak ditemukan.',
+            ]);
+    }
+
+    $data = $this->request->getJSON(true) ?? [];
+
+    $nama = trim((string) ($data['nama_matkul'] ?? ''));
+    $namaKurikulum = trim((string) ($data['nama_kurikulum'] ?? ''));
+    $kategori = $data['kategori'] ?? '';
+    $semester = (int) ($data['semester_kurikulum'] ?? 0);
+
+    if (
+        $nama === '' ||
+        $namaKurikulum === '' ||
+        !in_array($kategori, ['Wajib', 'Pilihan'], true) ||
+        $semester < 1 ||
+        $semester > 8
+    ) {
+        return $this->response
+            ->setStatusCode(400)
+            ->setJSON([
+                'status' => 'error',
+                'message' => 'Periksa kembali data mata kuliah.',
+            ]);
+    }
+
+    $db = \Config\Database::connect();
+
+    $mataKuliah = $db->table('mata_kuliah')
+        ->where('kode_matkul', $kode)
+        ->where('id_prodi', $idProdi)
+        ->get()
+        ->getRowArray();
+
+    if (!$mataKuliah) {
+        return $this->response
+            ->setStatusCode(404)
+            ->setJSON([
+                'status' => 'error',
+                'message' => 'Mata kuliah tidak ditemukan.',
+            ]);
+    }
+
+    $kurikulum = $db->table('kurikulum')
+        ->where('nama_kurikulum', $namaKurikulum)
+        ->where('id_prodi', $idProdi)
+        ->get()
+        ->getRowArray();
+
+    if (!$kurikulum) {
+        return $this->response
+            ->setStatusCode(400)
+            ->setJSON([
+                'status' => 'error',
+                'message' => 'Kurikulum tidak ditemukan untuk program studi ini.',
+            ]);
+    }
+
+    $db->transBegin();
+
+    try {
+        $db->table('mata_kuliah')
+            ->where('kode_matkul', $kode)
+            ->where('id_prodi', $idProdi)
+            ->update([
+                'nama_matkul' => $nama,
+            ]);
+
+        $detail = $db->table('detail_kurikulum')
+            ->where('kode_matkul', $kode)
+            ->get()
+            ->getRowArray();
+
+        if ($detail) {
+            $db->table('detail_kurikulum')
+                ->where('kode_matkul', $kode)
+                ->update([
+                    'id_kurikulum' => $kurikulum['id_kurikulum'],
+                    'kategori' => $kategori,
+                    'semester_kurikulum' => $semester,
+                ]);
+        } else {
+            $db->table('detail_kurikulum')->insert([
+                'id_kurikulum' => $kurikulum['id_kurikulum'],
+                'kode_matkul' => $kode,
+                'kategori' => $kategori,
+                'semester_kurikulum' => $semester,
+            ]);
+        }
+
+        if ($db->transStatus() === false) {
+            throw new \RuntimeException('Pembaruan gagal.');
+        }
+
+        $db->transCommit();
+
+        return $this->response->setJSON([
+            'status' => 'success',
+            'message' => 'Mata kuliah berhasil diperbarui.',
+            'data' => [
+                'kode_matkul' => $kode,
+                'nama_matkul' => $nama,
+                'nama_kurikulum' => $namaKurikulum,
+                'kategori' => $kategori,
+                'semester_kurikulum' => $semester,
+            ],
+        ]);
+    } catch (\Throwable $e) {
+        $db->transRollback();
+        log_message('error', 'API update mata kuliah gagal: ' . $e->getMessage());
+
+        return $this->response
+            ->setStatusCode(500)
+            ->setJSON([
+                'status' => 'error',
+                'message' => 'Mata kuliah gagal diperbarui.',
+            ]);
+    }
+}
+
+/**
+ * API DELETE: Menghapus mata kuliah.
+ * URL: DELETE /api/kaprodi/mata-kuliah/{kode}
+ */
+public function apiHapusMataKuliah($kode)
+{
+    if (!$this->authenticate(['kaprodi'])) {
+        return $this->response
+            ->setStatusCode(401)
+            ->setJSON([
+                'status' => 'error',
+                'message' => 'Silakan login sebagai Kaprodi.',
+            ]);
+    }
+
+    $userSession = session()->get('user_session');
+    $prodi = $this->prodiModel->find($userSession['id'] ?? null);
+    $idProdi = $prodi['id'] ?? null;
+
+    if (!$idProdi) {
+        return $this->response
+            ->setStatusCode(403)
+            ->setJSON([
+                'status' => 'error',
+                'message' => 'Program studi tidak ditemukan.',
+            ]);
+    }
+
+    $db = \Config\Database::connect();
+
+    $mataKuliah = $db->table('mata_kuliah')
+        ->where('kode_matkul', $kode)
+        ->where('id_prodi', $idProdi)
+        ->get()
+        ->getRowArray();
+
+    if (!$mataKuliah) {
+        return $this->response
+            ->setStatusCode(404)
+            ->setJSON([
+                'status' => 'error',
+                'message' => 'Mata kuliah tidak ditemukan.',
+            ]);
+    }
+
+    $db->transBegin();
+
+    try {
+        $db->table('detail_kurikulum')
+            ->where('kode_matkul', $kode)
+            ->delete();
+
+        $db->table('mata_kuliah')
+            ->where('kode_matkul', $kode)
+            ->where('id_prodi', $idProdi)
+            ->delete();
+
+        if ($db->transStatus() === false) {
+            throw new \RuntimeException('Penghapusan gagal.');
+        }
+
+        $db->transCommit();
+
+        return $this->response->setJSON([
+            'status' => 'success',
+            'message' => 'Mata kuliah berhasil dihapus.',
+            'data' => [
+                'kode_matkul' => $kode,
+            ],
+        ]);
+    } catch (\Throwable $e) {
+        $db->transRollback();
+        log_message('error', 'API hapus mata kuliah gagal: ' . $e->getMessage());
+
+        return $this->response
+            ->setStatusCode(500)
+            ->setJSON([
+                'status' => 'error',
+                'message' => 'Mata kuliah gagal dihapus.',
+            ]);
+    }
+}
+
 
 }
 

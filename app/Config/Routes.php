@@ -98,6 +98,18 @@ $routes->post(
     'Kaprodi::apiSimpanMataKuliah'
 );
 
+// API PUT: memperbarui mata kuliah
+$routes->put(
+    'api/kaprodi/mata-kuliah/(:segment)',
+    'Kaprodi::apiUpdateMataKuliah/$1'
+);
+
+// API DELETE: menghapus mata kuliah
+$routes->delete(
+    'api/kaprodi/mata-kuliah/(:segment)',
+    'Kaprodi::apiHapusMataKuliah/$1'
+);
+
 // Form tambah mata kuliah yang sudah ada
 $routes->post(
     'Kaprodi/simpanMataKuliah',

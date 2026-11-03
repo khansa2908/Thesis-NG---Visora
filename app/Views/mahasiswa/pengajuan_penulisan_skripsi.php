@@ -1,352 +1,753 @@
+
 <?= $this->extend("layout/template"); ?>
-
-
 
 <?= $this->section("content"); ?>
 
+<?php
+$disabled = ($mahasiswa['status_persetujuan_skripsi'] ?? '') === 'Disetujui';
+
+$mataKuliah = $mataKuliah ?? [];
+
+// Mata kuliah wajib untuk daftar yang belum lulus.
+$mkWajib = array_filter($mataKuliah, function ($mk) {
+    return ($mk['kategori'] ?? '') === 'Wajib';
+});
+
+// Pilihan yang sebelumnya tersimpan.
+$mkSedangDipilih = array_filter(
+    array_map('trim', explode(',', $mahasiswa['mk_sedang_diambil'] ?? ''))
+);
+
+$nilaiWajibTersimpan = trim($mahasiswa['mk_akan_diambil'] ?? '');
+
+$sudahLulusSemua = $nilaiWajibTersimpan === 'Sudah lulus semua';
+
+$mkWajibDipilih = $sudahLulusSemua
+    ? []
+    : array_filter(array_map('trim', explode(',', $nilaiWajibTersimpan)));
+?>
+
+<!-- NOTIFIKASI -->
 <?php if (session()->getFlashdata("message")) : ?>
-
     <div id="flashdata" data-open="true">
-
         <p id="icon" hidden><?= session()->getFlashdata("message")["icon"]; ?></p>
-
         <p id="title" hidden><?= session()->getFlashdata("message")["title"]; ?></p>
-
         <p id="text" hidden><?= session()->getFlashdata("message")["text"]; ?></p>
-
     </div>
-
 <?php endif; ?>
 
-    <h1 class="h3 mb-2 text-gray-800"><?= $title ?></h1>
+
+<!-- JUDUL HALAMAN -->
+<h1 class="h3 mb-2 text-gray-800">
+    <?= esc($title) ?>
+</h1>
 
 
+<!-- STATUS PENGAJUAN -->
+<div class="row">
+    <div class="col-lg-12">
 
-    <div class="row">
+        <?php if (
+            $mahasiswa['file_khs'] != null &&
+            $mahasiswa['file_krs'] != null &&
+            $mahasiswa['file_persetujuan_skripsi'] != null &&
+            $mahasiswa['sks_lulus'] != null &&
+            $mahasiswa['pembimbing_akademik'] != null &&
+            $mahasiswa['mk_sedang_diambil'] != null &&
+            $mahasiswa['mk_akan_diambil'] != null &&
+            $mahasiswa['status_persetujuan_skripsi'] == 'Disetujui'
+        ): ?>
 
-        <div class="col-lg-12">
+            <div class="alert alert-success" role="alert">
+                <small>
+                    <strong>Pengajuan penulisan skripsi</strong> Anda
+                    <strong>disetujui</strong>. Silakan kumpulkan
+                    <strong>proposal</strong> Anda pada
+                    <a href="<?= base_url("mahasiswa/proposal") ?>">menu berikut</a>.
+                </small>
+            </div>
 
-            <?php if ($mahasiswa['file_khs'] != null && $mahasiswa['file_krs'] != null && $mahasiswa['file_persetujuan_skripsi'] != null && $mahasiswa['sks_lulus'] != null && $mahasiswa['pembimbing_akademik'] != null && $mahasiswa['mk_sedang_diambil'] != null && $mahasiswa['mk_akan_diambil'] != null && $mahasiswa['status_persetujuan_skripsi'] == 'Disetujui' ): ?>
+        <?php elseif (
+            $mahasiswa['file_khs'] != null &&
+            $mahasiswa['file_krs'] != null &&
+            $mahasiswa['file_persetujuan_skripsi'] != null &&
+            $mahasiswa['sks_lulus'] != null &&
+            $mahasiswa['pembimbing_akademik'] != null &&
+            $mahasiswa['mk_sedang_diambil'] != null &&
+            $mahasiswa['mk_akan_diambil'] != null &&
+            $mahasiswa['status_persetujuan_skripsi'] == 'Ditolak'
+        ): ?>
 
-                    <div class="alert alert-success" role="alert">
+            <div class="alert alert-danger" role="alert">
+                <small>
+                    <strong>Pengajuan penulisan skripsi</strong> Anda
+                    <strong>ditolak</strong>. Silakan perbaiki dan kirim ulang pengajuan Anda.
+                </small>
+            </div>
 
-                        <small>
+        <?php elseif (
+            $mahasiswa['file_khs'] != null &&
+            $mahasiswa['file_krs'] != null &&
+            $mahasiswa['file_persetujuan_skripsi'] != null &&
+            $mahasiswa['sks_lulus'] != null &&
+            $mahasiswa['pembimbing_akademik'] != null &&
+            $mahasiswa['mk_sedang_diambil'] != null &&
+            $mahasiswa['mk_akan_diambil'] != null &&
+            $mahasiswa['status_persetujuan_skripsi'] == null
+        ): ?>
 
-                            <strong>Pengajuan penulisan skripsi</strong> anda <strong>disetujui</strong>. Silahkan kumpulkan <strong>proposal</strong> anda pada <a href="<?= base_url("mahasiswa/proposal") ?>" >menu berikut</a>.
+            <div class="alert alert-info" role="alert">
+                <small>
+                    <strong>Pengajuan Penulisan Skripsi</strong> Anda sedang
+                    <strong>diproses</strong>.
+                </small>
+            </div>
 
-                        </small>
+        <?php else: ?>
 
-                    </div>
+            <div class="alert alert-danger" role="alert">
+                <small>
+                    Lengkapi data berikut sebagai syarat
+                    <strong>wajib</strong> untuk dapat mengikuti kegiatan skripsi.
+                </small>
+            </div>
 
-                <?php elseif ($mahasiswa['file_khs'] != null && $mahasiswa['file_krs'] != null && $mahasiswa['file_persetujuan_skripsi'] != null && $mahasiswa['sks_lulus'] != null && $mahasiswa['pembimbing_akademik'] != null && $mahasiswa['mk_sedang_diambil'] != null && $mahasiswa['mk_akan_diambil'] != null && $mahasiswa['status_persetujuan_skripsi'] == 'Ditolak' ): ?>
-
-                    <div class="alert alert-danger"  role="alert">
-
-                        <small>
-
-                            <strong>Pengajuan penulisan skripsi</strong> anda <strong>ditolak</strong>. Silahkan perbaiki dan kirim ulang pengajuan anda.
-
-                        </small>
-
-                    </div>
-
-                <?php elseif ($mahasiswa['file_khs'] != null && $mahasiswa['file_krs'] != null && $mahasiswa['file_persetujuan_skripsi'] != null && $mahasiswa['sks_lulus'] != null && $mahasiswa['pembimbing_akademik'] != null && $mahasiswa['mk_sedang_diambil'] != null && $mahasiswa['mk_akan_diambil'] != null && $mahasiswa['status_persetujuan_skripsi'] == null ): ?>
-
-                    <div class="alert alert-info"  role="alert">
-
-                        <small>
-
-                            <strong>Pengajuan Penulisan Skripsi</strong> anda sedang <strong>diproses</strong>.
-
-                        </small>
-
-                    </div>
-
-                <?php elseif ($mahasiswa['file_khs'] == null || $mahasiswa['file_krs'] == null || $mahasiswa['file_persetujuan_skripsi'] == null || $mahasiswa['sks_lulus'] == null || $mahasiswa['pembimbing_akademik'] == null || $mahasiswa['mk_sedang_diambil'] == null || $mahasiswa['mk_akan_diambil'] == null || $mahasiswa['status_persetujuan_skripsi'] == null ): ?>
-
-                    <div class="alert alert-danger" role="alert">
-
-                        <small>
-
-                            Lengkapi data berikut sebagai syarat <strong>wajib</strong> untuk dapat mengikuti kegiatan skripsi.
-
-                        </small>
-
-                    </div>
-
-                <?php endif; ?>
-
-        </div>
+        <?php endif; ?>
 
     </div>
+</div>
 
 
+<!-- FORM PENGAJUAN -->
+<div class="card shadow mb-4">
 
-    <div class="card shadow mb-4">
+    <div class="card-header py-3">
+        Persyaratan Pengajuan Penulisan Skripsi
+    </div>
 
-        <div class="card-header py-3">
+    <div class="card-body">
 
-            Persyaratan Pengajuan Penulisan Skripsi
+        <form
+            action="<?= base_url("mahasiswa/insertPengajuanPenulisanSkripsi/" . $mahasiswa['npm']) ?>"
+            method="post"
+            id="formDataPersetujuanSkripsi"
+            enctype="multipart/form-data"
+        >
 
-        </div>
+            <?= csrf_field() ?>
 
-        <div class="card-body">
 
-            <form action="<?= base_url("mahasiswa/insertPengajuanPenulisanSkripsi/".$mahasiswa['npm']) ?>" method="post" id="formDataPersetujuanSkripsi" enctype="multipart/form-data">
+            <!-- BARIS PERTAMA: TIGA KOLOM -->
+            <div class="row">
 
-                <div class="row">
+                <div class="col-lg-4">
+                    <div class="form-group">
+                        <label for="sks_lulus">SKS yang Sudah Lulus</label>
 
-                    <div class="col-lg-6">
-
-                        <div class="form-group" >
-
-                            <label for="sks_lulus">SKS yang Sudah Lulus</label>
-
-                            <input type="text" class="form-control" id="sks_lulus" name="sks_lulus" value="<?= $mahasiswa["sks_lulus"] ?>" <?= ($mahasiswa['status_persetujuan_skripsi'] == 'Disetujui') ? "disabled" : "" ?>>
-
+                        <input
+                            type="text"
+                            class="form-control"
+                            id="sks_lulus"
+                            name="sks_lulus"
+                            value="<?= $mahasiswa['sks_lulus'] ?>"
+                            <?= ($mahasiswa['status_persetujuan_skripsi'] == 'Disetujui') ? "disabled" : "" ?>
+                            >
                         </div>
-
-                    </div>
-
+                </div>
 
 
-                    <div class="col-lg-6">
+                <!-- DOSEN PEMBIMBING -->
+                <div class="col-lg-4">
+                    <div class="form-group">
 
-                        <div class="form-group">
+                        <label for="pembimbing_akademik">
+                            Dosen Pembimbing Akademik
+                        </label>
 
-                            <label for="pembimbing_akademik">Dosen Pembimbing Akademik</label>
+                        <select
+                            class="form-control"
+                            name="pembimbing_akademik"
+                            id="pembimbing_akademik"
+                            <?= $disabled ? 'disabled' : '' ?>
+                        >
 
-                            <select class="form-control" name="pembimbing_akademik" id="pembimbing_akademik" value="<?= $mahasiswa["pembimbing_akademik"] ?>" <?= ($mahasiswa['status_persetujuan_skripsi'] == 'Disetujui') ? "disabled" : "" ?>>
+                            <option
+                                value=""
+                                disabled
+                                <?= empty($mahasiswa['pembimbing_akademik']) ? 'selected' : '' ?>
+                            >
+                                Pilih Dosen
+                            </option>
 
-                                <option value="none" selected disabled> - Pilih Pembimbing Akademik - </option>
+                            <?php foreach ($dosen as $d): ?>
 
-                            <?php foreach($dosen as $d) : ?>
-
-                                <?php if ($mahasiswa['pembimbing_akademik'] == $d['id']) : ?>
-
-                                    <option value="<?= $d['id'] ?>" selected><?= $d['inisial'] . " | " . $d['nama'] ?></option>
-
-                                <?php else : ?>
-
-                                    <option value="<?= $d['id'] ?>"><?= $d['inisial'] . " | " . $d['nama'] ?></option>
-
-                                <?php endif; ?>
+                                <option
+                                    value="<?= esc($d['id']) ?>"
+                                    <?= ($mahasiswa['pembimbing_akademik'] ?? '') == $d['id'] ? 'selected' : '' ?>
+                                >
+                                    <?= esc($d['inisial'] . ' | ' . $d['nama']) ?>
+                                </option>
 
                             <?php endforeach; ?>
 
-                            </select>
+                        </select>
+
+                    </div>
+                </div>
+
+
+                <!-- JENIS TUGAS AKHIR -->
+                <div class="col-lg-4">
+                    <div class="form-group">
+
+                        <label for="jenis_ta">
+                            Jenis Tugas Akhir
+                        </label>
+
+                        <select
+                            class="form-control"
+                            name="jenis_ta"
+                            id="jenis_ta"
+                            <?= $disabled ? 'disabled' : '' ?>
+                        >
+
+                            <option value="" selected disabled>
+                                Pilih TA
+                            </option>
+
+                            <option value="Skripsi">
+                                Skripsi
+                            </option>
+
+                            <option value="Proyek Akhir">
+                                Proyek Akhir
+                            </option>
+
+                            <option value="Publikasi Ilmiah">
+                                Publikasi Ilmiah
+                            </option>
+
+                        </select>
+
+                    </div>
+                </div>
+
+            </div>
+
+
+            <!-- BARIS KEDUA: DUA DROPDOWN MATA KULIAH -->
+            <div class="row mt-3">
+
+                <!-- KIRI: MATA KULIAH WAJIB BELUM LULUS -->
+                <div class="col-lg-6">
+
+                    <div class="form-group">
+
+                        <label>
+                            Mata Kuliah Wajib yang Belum Lulus
+                        </label>
+
+                        <div class="dropdown-mk" id="dropdownWajib">
+
+                            <button
+                                type="button"
+                                class="form-control dropdown-mk-button"
+                                <?= $disabled || $sudahLulusSemua ? 'disabled' : '' ?>
+                            >
+
+                                <span class="dropdown-mk-text">
+                                    <?= $sudahLulusSemua ? 'Sudah lulus semua' : 'Pilih Mata Kuliah' ?>
+                                </span>
+
+                                <i class="fas fa-chevron-down"></i>
+
+                            </button>
+
+
+                            <div class="dropdown-mk-content">
+
+                                <input
+                                    type="text"
+                                    class="form-control dropdown-mk-search"
+                                    placeholder="Cari mata kuliah..."
+                                >
+
+                                <div class="dropdown-mk-list">
+
+                                    <?php if (!empty($mkWajib)): ?>
+
+                                        <?php foreach ($mkWajib as $mk): ?>
+
+                                            <label class="dropdown-mk-option">
+
+                                                <input
+                                                    type="checkbox"
+                                                    name="mk_akan_diambil[]"
+                                                    value="<?= esc($mk['nama_matkul']) ?>"
+                                                    <?= in_array($mk['nama_matkul'], $mkWajibDipilih) ? 'checked' : '' ?>
+                                                    <?= $disabled || $sudahLulusSemua ? 'disabled' : '' ?>
+                                                >
+
+                                                <span>
+                                                    <?= esc($mk['nama_matkul']) ?>
+                                                </span>
+
+                                            </label>
+
+                                        <?php endforeach; ?>
+
+                                    <?php else: ?>
+
+                                        <p class="text-muted small">
+                                            Belum ada mata kuliah wajib.
+                                        </p>
+
+                                    <?php endif; ?>
+
+                                </div>
+
+
+                                <div class="dropdown-mk-footer">
+
+                                    <button
+                                        type="button"
+                                        class="btn btn-sm btn-light dropdown-mk-close"
+                                    >
+                                        Selesai
+                                    </button>
+
+                                </div>
+
+                            </div>
 
                         </div>
 
-                    </div>
 
+                        <!-- CHECKBOX SUDAH LULUS SEMUA -->
+                        <div class="custom-control custom-checkbox mt-3">
 
+                            <input
+                                type="checkbox"
+                                class="custom-control-input"
+                                id="sudahLulusSemua"
+                                <?= $sudahLulusSemua ? 'checked' : '' ?>
+                                <?= $disabled ? 'disabled' : '' ?>
+                            >
 
-                    <div class="col-lg-6">
-
-                        <div class="form-group" >
-
-                            <label for="mk_sedang_diambil">Matakuliah yang sedang diambil</label>
-
-                            <input type="text" class="form-control" id="mk_sedang_diambil" name="mk_sedang_diambil" value="<?= $mahasiswa["mk_sedang_diambil"] ?>" <?= ($mahasiswa['status_persetujuan_skripsi'] == 'Disetujui') ? "disabled" : "" ?>>
-
-                        </div>
-
-                    </div>
-
-
-
-                    <div class="col-lg-6">
-
-                        <div class="form-group" >
-
-                            <label for="mk_akan_diambil">Matakuliah yang akan diambil</label>
-
-                            <input type="text" class="form-control" id="mk_akan_diambil" name="mk_akan_diambil" value="<?= $mahasiswa["mk_akan_diambil"] ?>" <?= ($mahasiswa['status_persetujuan_skripsi'] == 'Disetujui') ? "disabled" : "" ?>>
+                            <label
+                                class="custom-control-label"
+                                for="sudahLulusSemua"
+                            >
+                                Sudah lulus semua
+                            </label>
 
                         </div>
 
-                    </div>
-
-
-
-                    <div class="col-lg-12 my-2">
-
-                        <label>File Kartu Hasil Studi</label>
-
-                        <?php if ($mahasiswa['file_khs'] == null) : ?>
-
-                            <small class="text-muted d-block">Unggah KHS dalam format PDF dengan ukuran maksimal 10 MB </small>
-
-                            <div class="input-group">
-
-                                <div class="custom-file">
-
-                                    <input type="file" class="custom-file-input" id="inputKhs" name="inputKhs">
-
-                                    <label class="custom-file-label" for="inputKhs">Pilih File Kartu Hasil Studi</label>
-
-                                </div>
-
-                            </div>
-
-                        <?php else: ?>
-
-                            <div class="input-group">
-
-                                <input type="text" class="form-control" value="<?= $mahasiswa['file_khs'] ?>" readonly>
-
-                                <div class="input-group-append">
-
-                                    <a role="button" class="btn btn-outline-primary" id="tinjauKhs" data-npm="<?= $mahasiswa['npm'] ?>">Tinjau</a>
-
-                                </div>
-
-                            </div>
-
-                        <?php endif; ?>
+                        <small class="text-muted">
+                            Pilih mata kuliah wajib yang belum Anda selesaikan.
+                        </small>
 
                     </div>
 
-                    
+                </div>
 
-                    <div class="col-lg-12 my-2">
 
-                        <label>File Kartu Rencana Studi</label>
+                <!-- KANAN: SEMUA MATA KULIAH YANG SEDANG DIAMBIL -->
+                <div class="col-lg-6">
 
-                        <?php if ($mahasiswa['file_krs'] == null) : ?>
+                    <div class="form-group">
 
-                            <small class="text-muted d-block">Unggah KRS dalam format PDF dengan ukuran maksimal 10 MB </small>
+                        <label>
+                            Mata Kuliah yang Sedang Berjalan
+                        </label>
 
-                            <div class="input-group">
+                        <div class="dropdown-mk" id="dropdownSedang">
 
-                                <div class="custom-file">
+                            <button
+                                type="button"
+                                class="form-control dropdown-mk-button"
+                                <?= $disabled ? 'disabled' : '' ?>
+                            >
 
-                                    <input type="file" class="custom-file-input" id="inputKrs" name="inputKrs">
+                                <span class="dropdown-mk-text">
+                                    Pilih Mata Kuliah
+                                </span>
 
-                                    <label class="custom-file-label" for="inputKrs">Pilih File Kartu Rencana Studi</label>
+                                <i class="fas fa-chevron-down"></i>
+
+                            </button>
+
+
+                            <div class="dropdown-mk-content">
+
+                                <input
+                                    type="text"
+                                    class="form-control dropdown-mk-search"
+                                    placeholder="Cari mata kuliah..."
+                                >
+
+                                <div class="dropdown-mk-list">
+
+                                    <?php if (!empty($mataKuliah)): ?>
+
+                                        <?php foreach ($mataKuliah as $mk): ?>
+
+                                            <label class="dropdown-mk-option">
+
+                                                <input
+                                                    type="checkbox"
+                                                    name="mk_sedang_diambil[]"
+                                                    value="<?= esc($mk['nama_matkul']) ?>"
+                                                    <?= in_array($mk['nama_matkul'], $mkSedangDipilih) ? 'checked' : '' ?>
+                                                    <?= $disabled ? 'disabled' : '' ?>
+                                                >
+
+                                                <span>
+                                                   <?= esc($mk['nama_matkul']) ?>
+                                            </span>
+
+                                            </label>
+
+                                        <?php endforeach; ?>
+
+                                    <?php else: ?>
+
+                                        <p class="text-muted small">
+                                            Belum ada mata kuliah untuk program studi Anda.
+                                        </p>
+
+                                    <?php endif; ?>
+
+                                </div>
+
+
+                                <div class="dropdown-mk-footer">
+
+                                    <button
+                                        type="button"
+                                        class="btn btn-sm btn-light dropdown-mk-close"
+                                    >
+                                        Selesai
+                                    </button>
 
                                 </div>
 
                             </div>
 
-                        <?php else: ?>
+                        </div>
 
-                            <div class="input-group">
-
-                                <input type="text" class="form-control" value="<?= $mahasiswa['file_krs'] ?>" readonly>
-
-                                <div class="input-group-append">
-
-                                    <a role="button" class="btn btn-outline-primary" id="tinjauKrs" data-npm="<?= $mahasiswa['npm'] ?>">Tinjau</a>
-
-                                </div>
-
-                            </div>
-
-                        <?php endif; ?>
+                        <small class="text-muted">
+                            Anda dapat memilih lebih dari satu mata kuliah.
+                        </small>
 
                     </div>
 
-                    
+                </div>
 
-                    <div class="col-lg-12 my-2">
+            </div>
 
-                        <label>File Persetujuan Penyusunan Skripsi</label>
 
-                        <?php if ($mahasiswa['file_persetujuan_skripsi'] == null) : ?>
+            <!-- DOKUMEN PERSYARATAN -->
+            <div class="row mt-4">
 
-                            <small class="text-muted d-block">Unggah Persetujuan Penyusunan Skripsi dalam format PDF dengan ukuran maksimal 10 MB</small>
+                <div class="col-lg-12">
 
-                            <div class="input-group">
+                    <h6 class="font-weight-bold mb-3">
+                        Dokumen Persyaratan
+                    </h6>
 
-                                <div class="custom-file">
+                </div>
 
-                                    <input type="file" class="custom-file-input" id="inputPersetujuanSkripsi" name="inputPersetujuanSkripsi">
 
-                                    <label class="custom-file-label" for="inputPersetujuanSkripsi">Pilih File Persetujuan Skripsi</label>
+                <!-- FILE KHS -->
+                <div class="col-lg-12 my-2">
 
-                                </div>
+                    <label>
+                        File Kartu Hasil Studi (KHS)
+                    </label>
+
+                    <?php if ($mahasiswa['file_khs'] == null): ?>
+
+                        <small class="text-muted d-block">
+                            Unggah KHS dalam format PDF dengan ukuran maksimal 10 MB.
+                        </small>
+
+                        <div class="input-group">
+
+                            <div class="custom-file">
+
+                                <input
+                                    type="file"
+                                    class="custom-file-input"
+                                    id="inputKhs"
+                                    name="inputKhs"
+                                    accept=".pdf"
+                                >
+
+                                <label
+                                    class="custom-file-label"
+                                    for="inputKhs"
+                                >
+                                    Pilih File Kartu Hasil Studi
+                                </label>
 
                             </div>
 
-                        <?php else: ?>
+                        </div>
 
-                            <div class="input-group">
+                    <?php else: ?>
 
-                                <input type="text" class="form-control" value="<?= $mahasiswa['file_persetujuan_skripsi'] ?>" readonly>
+                        <div class="input-group">
 
-                                <div class="input-group-append">
+                            <input
+                                type="text"
+                                class="form-control"
+                                value="<?= esc($mahasiswa['file_khs']) ?>"
+                                readonly
+                            >
 
-                                    <a role="button" class="btn btn-outline-primary" id="tinjauPersetujuan" data-npm="<?= $mahasiswa['npm'] ?>">Tinjau</a>
+                            <div class="input-group-append">
 
-                                </div>
+                                <a
+                                    role="button"
+                                    class="btn btn-outline-primary"
+                                    id="tinjauKhs"
+                                    data-npm="<?= esc($mahasiswa['npm']) ?>"
+                                >
+                                    Tinjau
+                                </a>
 
                             </div>
-
-                        <?php endif; ?>
-
-                    </div>
-
-
-
-                    <?php if ($mahasiswa['status_persetujuan_skripsi'] != 'Disetujui'): ?>
-
-                        <div class="col-lg-12 d-flex justify-content-end my-2">
-
-                            <button class="btn btn-primary" type="submit">Simpan</button>
 
                         </div>
 
                     <?php endif; ?>
 
-                    
+                </div>
+
+
+                <!-- FILE KRS -->
+                <div class="col-lg-12 my-2">
+
+                    <label>
+                        File Kartu Rencana Studi (KRS)
+                    </label>
+
+                    <?php if ($mahasiswa['file_krs'] == null): ?>
+
+                        <small class="text-muted d-block">
+                            Unggah KRS dalam format PDF dengan ukuran maksimal 10 MB.
+                        </small>
+
+                        <div class="input-group">
+
+                            <div class="custom-file">
+
+                                <input
+                                    type="file"
+                                    class="custom-file-input"
+                                    id="inputKrs"
+                                    name="inputKrs"
+                                    accept=".pdf"
+                                >
+
+                                <label
+                                    class="custom-file-label"
+                                    for="inputKrs"
+                                >
+                                    Pilih File Kartu Rencana Studi
+                                </label>
+
+                            </div>
+
+                        </div>
+
+                    <?php else: ?>
+
+                        <div class="input-group">
+
+                            <input
+                                type="text"
+                                class="form-control"
+                                value="<?= esc($mahasiswa['file_krs']) ?>"
+                                readonly
+                            >
+
+                            <div class="input-group-append">
+
+                                <a
+                                    role="button"
+                                    class="btn btn-outline-primary"
+                                    id="tinjauKrs"
+                                    data-npm="<?= esc($mahasiswa['npm']) ?>"
+                                >
+                                    Tinjau
+                                </a>
+
+                            </div>
+
+                        </div>
+
+                    <?php endif; ?>
 
                 </div>
 
-            </form>
 
-        </div>
+                <!-- FILE PERSETUJUAN -->
+                <div class="col-lg-12 my-2">
+
+                    <label>
+                        File Persetujuan Tugas Akhir
+                    </label>
+
+                    <?php if ($mahasiswa['file_persetujuan_skripsi'] == null): ?>
+
+                        <small class="text-muted d-block">
+                            Unggah persetujuan penyusunan tugas akhir dalam format PDF
+                            dengan ukuran maksimal 10 MB.
+                        </small>
+
+                        <div class="input-group">
+
+                            <div class="custom-file">
+
+                                <input
+                                    type="file"
+                                    class="custom-file-input"
+                                    id="inputPersetujuanSkripsi"
+                                    name="inputPersetujuanSkripsi"
+                                    accept=".pdf"
+                                >
+
+                                <label
+                                    class="custom-file-label"
+                                    for="inputPersetujuanSkripsi"
+                                >
+                                    Pilih File Persetujuan Tugas Akhir
+                                </label>
+
+                            </div>
+
+                        </div>
+
+                    <?php else: ?>
+
+                        <div class="input-group">
+
+                            <input
+                                type="text"
+                                class="form-control"
+                                value="<?= esc($mahasiswa['file_persetujuan_skripsi']) ?>"
+                                readonly
+                            >
+
+                            <div class="input-group-append">
+
+                                <a
+                                    role="button"
+                                    class="btn btn-outline-primary"
+                                    id="tinjauPersetujuan"
+                                    data-npm="<?= esc($mahasiswa['npm']) ?>"
+                                >
+                                    Tinjau
+                                </a>
+
+                            </div>
+
+                        </div>
+
+                    <?php endif; ?>
+
+                </div>
+
+
+                <!-- INFORMASI DOKUMEN -->
+                <div class="col-lg-12 my-2">
+
+                    <small class="text-primary">
+                        <i class="fas fa-info-circle"></i>
+                        Pastikan dokumen dipindai jelas menggunakan CamScanner
+                        dengan posisi berdiri (portrait).
+                    </small>
+
+                </div>
+
+
+                <!-- TOMBOL SIMPAN -->
+                <?php if (!$disabled): ?>
+
+                    <div class="col-lg-12 d-flex justify-content-end my-2">
+
+                        <button
+                            class="btn btn-primary"
+                            type="submit"
+                        >
+                            Kirim Pengajuan
+                        </button>
+
+                    </div>
+
+                <?php endif; ?>
+
+            </div>
+
+        </form>
 
     </div>
 
+</div>
 
 
+<!-- MODAL PREVIEW FILE -->
+<div
+    class="modal fade"
+    id="filePreview"
+    tabindex="-1"
+    role="dialog"
+    aria-labelledby="filePreviewLabel"
+    aria-hidden="true"
+>
 
+    <div class="modal-dialog modal-lg" role="document">
 
-    <!-- modal untuk preview file -->
+        <div class="modal-content">
 
-    <div class="modal fade" id="filePreview" tabindex="-1" role="dialog" aria-labelledby="filePreviewLabel" aria-hidden="true">
+            <div class="modal-header">
 
-        <div class="modal-dialog modal-lg" role="document">
+                <h5
+                    class="modal-title"
+                    id="filePreviewLabel"
+                ></h5>
 
-            <div class="modal-content">
-
-                <div class="modal-header">
-
-                    <h5 class="modal-title" id="filePreviewLabel"></h5>
-
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-
+                <button
+                    type="button"
+                    class="close"
+                    data-dismiss="modal"
+                    aria-label="Close"
+                >
                     <span aria-hidden="true">&times;</span>
+                </button>
 
-                    </button>
+            </div>
 
-                </div>
 
-                <div class="modal-body">
+            <div class="modal-body">
 
-                    <div class="row">
+                <div class="row">
 
-                        <div class="col-lg-12">
+                    <div class="col-lg-12">
 
-                            <div class="form-group">
+                        <div class="form-group">
 
-                                <div class="embed-responsive embed-responsive-16by9" id="previewContainer">
+                            <div
+                                class="embed-responsive embed-responsive-16by9"
+                                id="previewContainer"
+                            >
 
-                                    <iframe class="embed-responsive-item" src=""></iframe>
-
-                                </div>
+                                <iframe
+                                    class="embed-responsive-item"
+                                    src=""
+                                ></iframe>
 
                             </div>
 
@@ -354,27 +755,54 @@
 
                     </div>
 
-                    <div class="modal-footer">
+                </div>
 
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Kembali</button>
 
-                        <form action="" id="formUnduh" method="post">
+                <div class="modal-footer">
 
-                            <button class="btn btn-primary" type="submit">Unduh</button>
+                    <button
+                        type="button"
+                        class="btn btn-secondary"
+                        data-dismiss="modal"
+                    >
+                        Kembali
+                    </button>
+
+
+                    <form
+                        action=""
+                        id="formUnduh"
+                        method="post"
+                    >
+
+                        <button
+                            class="btn btn-primary"
+                            type="submit"
+                        >
+                            Unduh
+                        </button>
+
+                    </form>
+
+
+                    <?php if (!$disabled): ?>
+
+                        <form
+                            action=""
+                            id="formHapus"
+                            method="post"
+                        >
+
+                            <button
+                                class="btn btn-danger"
+                                type="submit"
+                            >
+                                Hapus
+                            </button>
 
                         </form>
 
-                        <?php if ($mahasiswa['status_persetujuan_skripsi'] != 'Disetujui'): ?>
-
-                            <form action="" id="formHapus" method="post">
-
-                                <button class="btn btn-danger" type="submit">Hapus</button>
-
-                            </form>
-
-                        <?php endif; ?>
-
-                    </div>
+                    <?php endif; ?>
 
                 </div>
 
@@ -384,16 +812,280 @@
 
     </div>
 
+</div>
 
 
 <?= $this->endSection(); ?>
 
 
-
+<!-- JAVASCRIPT -->
 <?= $this->section("scripts"); ?>
 
-    <script src="<?= base_url("assets/vendor/daterangepicker/daterangepicker.js") ?>"></script>
+<script src="<?= base_url("assets/vendor/daterangepicker/daterangepicker.js") ?>"></script>
 
-    <script src="<?= base_url("assets/js/mahasiswa/pengajuanPenulisanSkripsi.js");?>"></script>
+<script src="<?= base_url("assets/js/mahasiswa/pengajuanPenulisanSkripsi.js") ?>"></script>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    // =========================================
+    // DROPDOWN MATA KULIAH
+    // =========================================
+
+    document.querySelectorAll('.dropdown-mk').forEach(function (dropdown) {
+
+        const button = dropdown.querySelector('.dropdown-mk-button');
+        const search = dropdown.querySelector('.dropdown-mk-search');
+        const closeButton = dropdown.querySelector('.dropdown-mk-close');
+
+        if (!button) return;
+
+
+        // Membuka dropdown.
+        button.addEventListener('click', function (e) {
+
+            e.stopPropagation();
+
+            document.querySelectorAll('.dropdown-mk').forEach(function (other) {
+
+                if (other !== dropdown) {
+                    other.classList.remove('active');
+                }
+
+            });
+
+            dropdown.classList.toggle('active');
+
+            if (search && dropdown.classList.contains('active')) {
+                search.focus();
+            }
+
+        });
+
+
+        // Menutup dropdown.
+        if (closeButton) {
+
+            closeButton.addEventListener('click', function () {
+                dropdown.classList.remove('active');
+            });
+
+        }
+
+
+        // Pencarian mata kuliah.
+        if (search) {
+
+            search.addEventListener('input', function () {
+
+                const keyword = this.value.toLowerCase();
+
+                dropdown.querySelectorAll('.dropdown-mk-option').forEach(function (option) {
+
+                    const nama = option.textContent.toLowerCase();
+
+                    option.style.display = nama.includes(keyword) ? 'flex' : 'none';
+
+                });
+
+            });
+
+        }
+
+
+        // Perubahan pilihan.
+        dropdown.querySelectorAll('input[type="checkbox"]').forEach(function (checkbox) {
+
+            checkbox.addEventListener('change', function () {
+                updateDropdownText(dropdown);
+            });
+
+        });
+
+        updateDropdownText(dropdown);
+
+    });
+
+
+    // =========================================
+    // UPDATE TEKS DROPDOWN
+    // =========================================
+
+    function updateDropdownText(dropdown) {
+
+        const selected = Array.from(
+            dropdown.querySelectorAll('.dropdown-mk-option input:checked')
+        ).map(function (checkbox) {
+            return checkbox.value;
+        });
+
+        const text = dropdown.querySelector('.dropdown-mk-text');
+
+        if (!text) return;
+
+        // Pertahankan teks jika mahasiswa memilih opsi sudah lulus semua.
+        const checkboxLulusSemua = document.getElementById('sudahLulusSemua');
+
+        if (dropdown.id === 'dropdownWajib' && checkboxLulusSemua && checkboxLulusSemua.checked) {
+            text.textContent = 'Sudah lulus semua';
+        } else if (selected.length === 0) {
+            text.textContent = 'Pilih Mata Kuliah';
+        } else {
+            // Tampilkan nama mata kuliah yang dipilih, bukan hanya jumlahnya.
+            text.textContent = selected.join(', ');
+            text.title = selected.join(', ');
+        }
+
+    }
+
+
+    // =========================================
+    // TUTUP DROPDOWN KETIKA KLIK DI LUAR
+    // =========================================
+
+    document.addEventListener('click', function (e) {
+
+        if (!e.target.closest('.dropdown-mk')) {
+
+            document.querySelectorAll('.dropdown-mk').forEach(function (dropdown) {
+                dropdown.classList.remove('active');
+            });
+
+        }
+
+    });
+
+
+    // =========================================
+    // CHECKBOX SUDAH LULUS SEMUA
+    // =========================================
+
+    const checkboxLulus = document.getElementById('sudahLulusSemua');
+
+    const dropdownWajib = document.getElementById('dropdownWajib');
+
+    if (checkboxLulus && dropdownWajib) {
+
+        checkboxLulus.addEventListener('change', function () {
+
+            const daftarCheckbox = dropdownWajib.querySelectorAll(
+                '.dropdown-mk-option input[type="checkbox"]'
+            );
+
+            daftarCheckbox.forEach(function (checkbox) {
+
+                checkbox.checked = false;
+                checkbox.disabled = checkboxLulus.checked;
+
+            });
+
+
+            const button = dropdownWajib.querySelector('.dropdown-mk-button');
+
+            const text = dropdownWajib.querySelector('.dropdown-mk-text');
+
+            button.disabled = checkboxLulus.checked;
+
+            if (checkboxLulus.checked) {
+
+                text.textContent = 'Sudah lulus semua';
+
+                dropdownWajib.classList.remove('active');
+
+            } else {
+
+                text.textContent = 'Pilih Mata Kuliah';
+
+            }
+
+        });
+
+    }
+
+
+    // =========================================
+    // LABEL FILE UPLOAD
+    // =========================================
+
+    document.querySelectorAll('.custom-file-input').forEach(function (input) {
+
+        input.addEventListener('change', function () {
+
+            const fileName = this.files[0]
+                ? this.files[0].name
+                : 'Pilih File';
+
+            const label = this.nextElementSibling;
+
+            if (label) {
+                label.textContent = fileName;
+            }
+
+        });
+
+    });
+
+
+    // =========================================
+    // PERSIAPAN DATA SEBELUM FORM DIKIRIM
+    // =========================================
+
+    const form = document.getElementById('formDataPersetujuanSkripsi');
+
+    if (form) {
+
+        form.addEventListener('submit', function () {
+
+            const wajibDipilih = Array.from(
+                document.querySelectorAll(
+                    '#dropdownWajib .dropdown-mk-option input:checked'
+                )
+            ).map(function (checkbox) {
+                return checkbox.value;
+            });
+
+
+            const sedangDipilih = Array.from(
+                document.querySelectorAll(
+                    '#dropdownSedang .dropdown-mk-option input:checked'
+                )
+            ).map(function (checkbox) {
+                return checkbox.value;
+            });
+
+
+            // Input tersembunyi untuk nilai mata kuliah wajib.
+            const hiddenWajib = document.createElement('input');
+
+            hiddenWajib.type = 'hidden';
+
+            hiddenWajib.name = 'mk_akan_diambil';
+
+            hiddenWajib.value = checkboxLulus && checkboxLulus.checked
+                ? 'Sudah lulus semua'
+                : wajibDipilih.join(', ');
+
+            form.appendChild(hiddenWajib);
+
+
+            // Input tersembunyi untuk nilai mata kuliah sedang diambil.
+            const hiddenSedang = document.createElement('input');
+
+            hiddenSedang.type = 'hidden';
+
+            hiddenSedang.name = 'mk_sedang_diambil';
+
+            hiddenSedang.value = sedangDipilih.join(', ');
+
+            form.appendChild(hiddenSedang);
+
+        });
+
+    }
+
+});
+</script>
+
 
 <?= $this->endSection(); ?>

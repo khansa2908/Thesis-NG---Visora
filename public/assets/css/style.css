@@ -288,3 +288,80 @@ input:checked + .slider:before {
     position: static !important;
     transform-origin: center !important;
 }
+
+
+/* Dropdown Mata Kuliah */
+.dropdown-mk {
+    position: relative;
+    width: 100%;
+}
+
+.dropdown-mk-button {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #fff;
+    text-align: left;
+    color: #6c757d;
+    cursor: pointer;
+    height: 38px;
+}
+
+.dropdown-mk-button i {
+    font-size: 12px;
+    color: #6c757d;
+}
+
+.dropdown-mk-content {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    padding: 12px;
+    background: #fff;
+    border: 1px solid #ced4da;
+    border-radius: 5px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, .12);
+    z-index: 1000;
+}
+
+.dropdown-mk.active .dropdown-mk-content {
+    display: block;
+}
+
+.dropdown-mk-search {
+    margin-bottom: 10px;
+}
+
+.dropdown-mk-list {
+    max-height: 220px;
+    overflow-y: auto;
+     overflow-x: hidden;
+}
+
+.dropdown-mk-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px;
+    margin: 0;
+    cursor: pointer;
+    font-weight: normal;
+}
+
+.dropdown-mk-option:hover {
+    background-color: #f1f3f5;
+}
+
+.dropdown-mk-option input {
+    margin-top: 4px;
+}
+
+.dropdown-mk-footer {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 10px;
+    border-top: 1px solid #eee;
+    margin-top: 8px;
+}
