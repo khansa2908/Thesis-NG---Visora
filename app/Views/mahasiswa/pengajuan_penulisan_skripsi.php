@@ -1,4 +1,3 @@
-
 <?= $this->extend("layout/template"); ?>
 
 <?= $this->section("content"); ?>
@@ -476,13 +475,8 @@ $mkWajibDipilih = $sudahLulusSemua
 
                             <div class="custom-file">
 
-                                <input
-                                    type="file"
-                                    class="custom-file-input"
-                                    id="inputKhs"
-                                    name="inputKhs"
-                                    accept=".pdf"
-                                >
+                                <input type="file" class="custom-file-input"
+                                id="inputKhs" name="inputKhs">
 
                                 <label
                                     class="custom-file-label"
@@ -543,14 +537,8 @@ $mkWajibDipilih = $sudahLulusSemua
 
                             <div class="custom-file">
 
-                                <input
-                                    type="file"
-                                    class="custom-file-input"
-                                    id="inputKrs"
-                                    name="inputKrs"
-                                    accept=".pdf"
-                                >
-
+                                <input type="file" class="custom-file-input"
+                                id="inputKrs" name="inputKrs">
                                 <label
                                     class="custom-file-label"
                                     for="inputKrs"
@@ -611,13 +599,8 @@ $mkWajibDipilih = $sudahLulusSemua
 
                             <div class="custom-file">
 
-                                <input
-                                    type="file"
-                                    class="custom-file-input"
-                                    id="inputPersetujuanSkripsi"
-                                    name="inputPersetujuanSkripsi"
-                                    accept=".pdf"
-                                >
+                                <input type="file" class="custom-file-input"
+                                id="inputPersetujuanSkripsi" name="inputPersetujuanSkripsi">
 
                                 <label
                                     class="custom-file-label"
