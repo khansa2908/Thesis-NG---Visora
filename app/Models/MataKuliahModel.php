@@ -35,7 +35,7 @@ class MataKuliahModel extends Model
             )
             ->join(
                 'kurikulum k',
-                'k.id_kurikulum = dk.id_kurikulum',
+                'k.id_kurikulum = dk.id_kurikulum AND k.id_prodi = mk.id_prodi',
                 'left'
             )
             ->where('mk.id_prodi', $idProdi)

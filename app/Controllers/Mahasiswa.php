@@ -163,12 +163,20 @@ class Mahasiswa extends BaseController
         (int) $mahasiswa['id_prodi']
     );
 
+    // Ambil jenis tugas akhir berdasarkan program studi mahasiswa
+    $jenisTugasAkhir = \Config\Database::connect()
+        ->table('jenis_tugas_akhir')
+        ->where('id_prodi', (int) $mahasiswa['id_prodi'])
+        ->get()
+        ->getResultArray();
+
     // Kirim data ke halaman View
     $data = [
         'title' => 'Pengajuan Penulisan Skripsi',
         'mahasiswa' => $mahasiswa,
         'dosen' => $dosen,
         'mataKuliah' => $mataKuliah,
+        'jenisTugasAkhir' => $jenisTugasAkhir,
     ];
 
     return view("mahasiswa/pengajuan_penulisan_skripsi", $data);
@@ -198,6 +206,28 @@ public function insertPengajuanPenulisanSkripsi($npm)
             "text" => "Data mahasiswa tidak ditemukan."
         ]);
     }
+
+    // ==============================
+    // AMBIL DAN VALIDASI JENIS TA
+    // ==============================
+
+    $idJenisTugasAkhir = (int) $this->request->getPost("jenis_ta");
+
+$db = \Config\Database::connect();
+
+$jenisTugasAkhir = $db->table('jenis_tugas_akhir')
+    ->where('id_jenis_tugas_akhir', $idJenisTugasAkhir)
+    ->where('id_prodi', (int) $mahasiswa['id_prodi'])
+    ->get()
+    ->getRowArray();
+
+if (!$jenisTugasAkhir) {
+    return redirect()->back()->withInput()->with('message', [
+        "icon" => "error",
+        "title" => "Jenis Tugas Akhir Tidak Valid",
+        "text" => "Silakan pilih jenis tugas akhir yang tersedia untuk program studi Anda."
+    ]);
+}
 
     // ==============================
     // UPLOAD FILE KHS
@@ -267,16 +297,109 @@ public function insertPengajuanPenulisanSkripsi($npm)
         "pembimbing_akademik"
     );
 
-    // Mengambil hasil pilihan checkbox mata kuliah
     $mkSedangDiambil = $this->request->getPost(
-        "mk_sedang_diambil",
-        FILTER_SANITIZE_SPECIAL_CHARS
+        "mk_sedang_diambil"
     );
 
     $mkAkanDiambil = $this->request->getPost(
-        "mk_akan_diambil",
-        FILTER_SANITIZE_SPECIAL_CHARS
+        "mk_akan_diambil"
     );
+
+    // ==============================
+    // NORMALISASI DATA MATA KULIAH
+    // ==============================
+
+    $normalisasiMK = function ($data) {
+        if (is_array($data)) {
+            $daftar = $data;
+        } else {
+            $daftar = explode(',', (string) $data);
+        }
+
+        return array_values(array_filter(
+            array_map('trim', $daftar),
+            function ($item) {
+                return $item !== '';
+            }
+        ));
+    };
+
+    $mkSedangDiambil = $normalisasiMK($mkSedangDiambil);
+
+    $statusSudahLulusSemua = (
+        is_string($mkAkanDiambil) &&
+        strtolower(trim($mkAkanDiambil)) === 'sudah lulus semua'
+    );
+
+    if ($statusSudahLulusSemua) {
+        $mkAkanDiambil = 'Sudah Lulus Semua';
+    } else {
+        $mkAkanDiambil = $normalisasiMK($mkAkanDiambil);
+    }
+
+    // ==============================
+    // VALIDASI MATA KULIAH MAHASISWA
+    // ==============================
+
+    $daftarMK = $db->table('detail_kurikulum dk')
+        ->select('mk.nama_matkul, dk.kategori')
+        ->join(
+            'mata_kuliah mk',
+            'mk.kode_matkul = dk.kode_matkul'
+        )
+        ->join(
+            'kurikulum k',
+            'k.id_kurikulum = dk.id_kurikulum'
+        )
+        ->where('mk.id_prodi', (int) $mahasiswa['id_prodi'])
+        ->where('k.id_prodi', (int) $mahasiswa['id_prodi'])
+        ->get()
+        ->getResultArray();
+
+    $daftarSemuaMK = array_column($daftarMK, 'nama_matkul');
+
+    $daftarMKWajib = [];
+
+    foreach ($daftarMK as $mk) {
+        if (strtolower($mk['kategori']) === 'wajib') {
+            $daftarMKWajib[] = $mk['nama_matkul'];
+        }
+    }
+
+    // Validasi mata kuliah yang sedang diambil
+    foreach ($mkSedangDiambil as $namaMK) {
+        if (!in_array($namaMK, $daftarSemuaMK, true)) {
+            return redirect()->back()->withInput()->with('message', [
+                "icon" => "error",
+                "title" => "Mata Kuliah Tidak Valid",
+                "text" => "Terdapat mata kuliah yang tidak terdaftar pada program studi Anda."
+            ]);
+        }
+    }
+
+    // Validasi mata kuliah wajib yang belum lulus
+    if (!$statusSudahLulusSemua) {
+
+        if (empty($mkAkanDiambil)) {
+            return redirect()->back()->withInput()->with('message', [
+                "icon" => "error",
+                "title" => "Data Belum Lengkap",
+                "text" => "Pilih mata kuliah wajib yang belum lulus atau centang Sudah Lulus Semua."
+            ]);
+        }
+
+        foreach ($mkAkanDiambil as $namaMK) {
+            if (!in_array($namaMK, $daftarMKWajib, true)) {
+                return redirect()->back()->withInput()->with('message', [
+                    "icon" => "error",
+                    "title" => "Mata Kuliah Tidak Valid",
+                    "text" => "Mata kuliah yang dipilih harus terdaftar sebagai mata kuliah wajib pada program studi Anda."
+                ]);
+            }
+        }
+
+        $mkAkanDiambil = implode(', ', $mkAkanDiambil);
+    }
 
     // ==============================
     // SIMPAN DATA MAHASISWA
@@ -294,7 +417,9 @@ public function insertPengajuanPenulisanSkripsi($npm)
 
         "pembimbing_akademik" => $pembimbingAkademik,
 
-        "mk_sedang_diambil" => $mkSedangDiambil,
+        "id_jenis_tugas_akhir" => $idJenisTugasAkhir,
+
+        "mk_sedang_diambil" => implode(', ', $mkSedangDiambil),
 
         "mk_akan_diambil" => $mkAkanDiambil,
 
@@ -323,10 +448,305 @@ public function insertPengajuanPenulisanSkripsi($npm)
 }
 
 
+    /**
+     * API GET: Membaca daftar mata kuliah dan pilihan mahasiswa.
+     * URL: GET /api/mahasiswa/mata-kuliah
+     */
+    public function apiMataKuliahMahasiswa()
+    {
+        // 1. Autentikasi mahasiswa
+        if (!$this->authenticate(["mahasiswa"])) {
+            return $this->response
+                ->setStatusCode(401)
+                ->setJSON([
+                    "status" => "error",
+                    "message" => "Silakan login sebagai mahasiswa."
+                ]);
+        }
+
+        // 2. Ambil data mahasiswa dari session
+        $userSession = session()->get("user_session");
+
+        $mahasiswa = $this->mahasiswaModel->find(
+            $userSession['id'] ?? null
+        );
+
+        if (!$mahasiswa) {
+            return $this->response
+                ->setStatusCode(404)
+                ->setJSON([
+                    "status" => "error",
+                    "message" => "Data mahasiswa tidak ditemukan."
+                ]);
+        }
+
+        // 3. Ambil database
+        $db = \Config\Database::connect();
+
+        // 4. Ambil mata kuliah berdasarkan program studi
+        // Semua tahun kurikulum dapat diakses.
+        $mataKuliah = $db->table('detail_kurikulum dk')
+            ->select("
+                mk.kode_matkul,
+                mk.nama_matkul,
+                dk.kategori,
+                MIN(dk.semester_kurikulum) AS semester_kurikulum
+            ")
+            ->join(
+                'kurikulum k',
+                'k.id_kurikulum = dk.id_kurikulum'
+            )
+            ->join(
+                'mata_kuliah mk',
+                'mk.kode_matkul = dk.kode_matkul'
+            )
+            ->where('k.id_prodi', $mahasiswa['id_prodi'])
+            ->where('mk.id_prodi', $mahasiswa['id_prodi'])
+            ->groupBy([
+                'mk.kode_matkul',
+                'mk.nama_matkul',
+                'dk.kategori'
+            ])
+            ->orderBy('semester_kurikulum', 'ASC')
+            ->get()
+            ->getResultArray();
+
+        // 5. Ambil pilihan mata kuliah yang sudah tersimpan
+        $mkAkanDiambil = trim(
+            $mahasiswa['mk_akan_diambil'] ?? ''
+        );
+
+        $mkSedangDiambil = trim(
+            $mahasiswa['mk_sedang_diambil'] ?? ''
+        );
+
+        return $this->response->setJSON([
+            "status" => "success",
+            "message" => "Data mata kuliah berhasil diambil.",
+            "data" => [
+                "npm" => $mahasiswa['npm'],
+                "id_prodi" => $mahasiswa['id_prodi'],
+                "mata_kuliah" => $mataKuliah,
+                "pilihan_mahasiswa" => [
+                    "mk_akan_diambil" => $mkAkanDiambil,
+                    "mk_sedang_diambil" => $mkSedangDiambil
+                ]
+            ]
+        ]);
+    }
 
 
+    /**
+     * API POST: Menyimpan pilihan mata kuliah mahasiswa.
+     * URL: POST /api/mahasiswa/mata-kuliah
+     */
+    public function apiSimpanMataKuliahMahasiswa()
+    {
+        // 1. Autentikasi mahasiswa
+        if (!$this->authenticate(["mahasiswa"])) {
+            return $this->response
+                ->setStatusCode(401)
+                ->setJSON([
+                    "status" => "error",
+                    "message" => "Silakan login sebagai mahasiswa."
+                ]);
+        }
 
+        // 2. Ambil data mahasiswa dari session
+        $userSession = session()->get("user_session");
 
+        $mahasiswa = $this->mahasiswaModel->find(
+            $userSession['id'] ?? null
+        );
+
+        if (!$mahasiswa) {
+            return $this->response
+                ->setStatusCode(404)
+                ->setJSON([
+                    "status" => "error",
+                    "message" => "Data mahasiswa tidak ditemukan."
+                ]);
+        }
+
+        // 3. Ambil data request JSON atau form
+        $input = $this->request->getJSON(true);
+
+        if (!is_array($input)) {
+            $input = $this->request->getPost();
+        }
+
+        // 4. Fungsi untuk merapikan pilihan mata kuliah
+        $normalisasi = function ($nilai) {
+            if (is_string($nilai)) {
+                if (trim($nilai) === '') {
+                    return [];
+                }
+
+                $nilai = explode(',', $nilai);
+            }
+
+            if (!is_array($nilai)) {
+                return null;
+            }
+
+            $hasil = [];
+
+            foreach ($nilai as $item) {
+                if (!is_string($item)) {
+                    return null;
+                }
+
+                $item = trim($item);
+
+                if ($item !== '') {
+                    $hasil[] = $item;
+                }
+            }
+
+            return array_values(array_unique($hasil));
+        };
+
+        $mkAkanDiambil = $input['mk_akan_diambil'] ?? [];
+        $mkSedangDiambil = $input['mk_sedang_diambil'] ?? [];
+
+        // 5. Periksa pilihan "Sudah lulus semua"
+        $sudahLulusSemua = (
+            is_string($mkAkanDiambil) &&
+            trim($mkAkanDiambil) === 'Sudah lulus semua'
+        );
+
+        if ($sudahLulusSemua) {
+            $mkAkanDiambil = [];
+        } else {
+            $mkAkanDiambil = $normalisasi($mkAkanDiambil);
+        }
+
+        $mkSedangDiambil = $normalisasi($mkSedangDiambil);
+
+        if (
+            $mkAkanDiambil === null ||
+            $mkSedangDiambil === null
+        ) {
+            return $this->response
+                ->setStatusCode(400)
+                ->setJSON([
+                    "status" => "error",
+                    "message" => "Format pilihan mata kuliah tidak valid."
+                ]);
+        }
+
+        // 6. Ambil daftar mata kuliah resmi berdasarkan prodi
+        $db = \Config\Database::connect();
+
+        $mataKuliah = $db->table('detail_kurikulum dk')
+            ->select("
+                mk.nama_matkul,
+                dk.kategori
+            ")
+            ->join(
+                'kurikulum k',
+                'k.id_kurikulum = dk.id_kurikulum'
+            )
+            ->join(
+                'mata_kuliah mk',
+                'mk.kode_matkul = dk.kode_matkul'
+            )
+            ->where('k.id_prodi', $mahasiswa['id_prodi'])
+            ->where('mk.id_prodi', $mahasiswa['id_prodi'])
+            ->groupBy([
+                'mk.nama_matkul',
+                'dk.kategori'
+            ])
+            ->get()
+            ->getResultArray();
+
+        // 7. Siapkan daftar mata kuliah yang diperbolehkan
+        $daftarSemua = [];
+        $daftarWajib = [];
+
+        foreach ($mataKuliah as $mk) {
+            $daftarSemua[] = $mk['nama_matkul'];
+
+            if ($mk['kategori'] === 'Wajib') {
+                $daftarWajib[] = $mk['nama_matkul'];
+            }
+        }
+
+        $daftarSemua = array_unique($daftarSemua);
+        $daftarWajib = array_unique($daftarWajib);
+
+        // 8. Pastikan pilihan wajib benar-benar mata kuliah wajib
+        foreach ($mkAkanDiambil as $namaMK) {
+            if (!in_array($namaMK, $daftarWajib, true)) {
+                return $this->response
+                    ->setStatusCode(400)
+                    ->setJSON([
+                        "status" => "error",
+                        "message" => "Mata kuliah belum lulus tidak valid: " . $namaMK
+                    ]);
+            }
+        }
+
+        // 9. Pastikan mata kuliah yang sedang diambil berasal dari prodi mahasiswa
+        foreach ($mkSedangDiambil as $namaMK) {
+            if (!in_array($namaMK, $daftarSemua, true)) {
+                return $this->response
+                    ->setStatusCode(400)
+                    ->setJSON([
+                        "status" => "error",
+                        "message" => "Mata kuliah yang sedang diambil tidak valid: " . $namaMK
+                    ]);
+            }
+        }
+
+        // 10. Siapkan data untuk disimpan
+        $nilaiAkanDiambil = $sudahLulusSemua
+            ? 'Sudah lulus semua'
+            : implode(', ', $mkAkanDiambil);
+
+        $nilaiSedangDiambil = implode(', ', $mkSedangDiambil);
+
+        // 11. Periksa batas panjang kolom database
+        if (
+            strlen($nilaiAkanDiambil) > 255 ||
+            strlen($nilaiSedangDiambil) > 255
+        ) {
+            return $this->response
+                ->setStatusCode(400)
+                ->setJSON([
+                    "status" => "error",
+                    "message" => "Pilihan mata kuliah melebihi batas penyimpanan."
+                ]);
+        }
+
+        // 12. Simpan berdasarkan NPM mahasiswa yang login
+        $berhasil = $this->mahasiswaModel->update(
+            $mahasiswa['npm'],
+            [
+                'mk_akan_diambil' => $nilaiAkanDiambil,
+                'mk_sedang_diambil' => $nilaiSedangDiambil
+            ]
+        );
+
+        if (!$berhasil) {
+            return $this->response
+                ->setStatusCode(500)
+                ->setJSON([
+                    "status" => "error",
+                    "message" => "Pilihan mata kuliah gagal disimpan."
+                ]);
+        }
+
+        return $this->response->setJSON([
+            "status" => "success",
+            "message" => "Pilihan mata kuliah berhasil disimpan.",
+            "data" => [
+                "npm" => $mahasiswa['npm'],
+                "mk_akan_diambil" => $nilaiAkanDiambil,
+                "mk_sedang_diambil" => $nilaiSedangDiambil
+            ]
+        ]);
+    }
 
 
 

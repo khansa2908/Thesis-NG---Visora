@@ -126,7 +126,23 @@ $routes->post(
     'Kaprodi/hapusMataKuliah',
     'Kaprodi::hapusMataKuliah'
 );
+/*
+|--------------------------------------------------------------------------
+| API MATA KULIAH MAHASISWA
+|--------------------------------------------------------------------------
+*/
 
+// GET: Membaca daftar mata kuliah dan pilihan mahasiswa
+$routes->get(
+    'api/mahasiswa/mata-kuliah',
+    'Mahasiswa::apiMataKuliahMahasiswa'
+);
+
+// POST: Menyimpan pilihan mata kuliah mahasiswa
+$routes->post(
+    'api/mahasiswa/mata-kuliah',
+    'Mahasiswa::apiSimpanMataKuliahMahasiswa'
+);
 
 /*
  * --------------------------------------------------------------------

@@ -67,80 +67,99 @@
                 <table class="table table-bordered" id="pengajuanSkripsi" width="100%" cellspacing="0">
 
                     <thead>
-
-                        <tr>
-
-                            <th>No</th>
-
-                            <th>NPM</th>
-
-                            <th>Nama</th>
-
-                            <th>Program Studi</th>
-
-                            <th>SKS Lulus</th>
-
-                            <th>Pemb. Akademik</th>
-
-                            <th>Matakuliah sedang diambil</th>
-
-                            <th>Matakuliah akan diambil</th>
-
-                            <th>Tanggal Pengajuan</th>
-
-                            <th>Status</th>
-
-                            <th>Aksi</th>
-
-                        </tr>
-
-                    </thead>
+    <tr>
+        <th>No</th>
+        <th>NPM</th>
+        <th>Nama</th>
+        <th>Program Studi</th>
+        <th>SKS Lulus</th>
+        <th>Pemb. Akademik</th>
+        <th>Mata Kuliah Wajib Belum Lulus</th>
+        <th>Mata Kuliah Sedang Diambil</th>
+        <th>Jenis Tugas Akhir</th>
+        <th>Tanggal Pengajuan</th>
+        <th>Status</th>
+        <th>Aksi</th>
+    </tr>
+</thead>
 
                     <tbody>
 
-                        <?php
+    <?php
+    $counter = 1;
 
-                        $counter = 1;
+    foreach ($pengajuanPenulisanSkripsi as $pps) :
+    ?>
 
-                        foreach($pengajuanPenulisanSkripsi as $pps) :
+        <tr>
 
-                        ?>
+            <td><?= $counter; ?></td>
 
-                            <tr>
+            <td class="npm"><?= $pps['npm'] ?></td>
 
-                                <td><?= $counter; ?></td>
+            <td><?= $pps['nama_mahasiswa'] ?></td>
 
-                                <td class="npm"><?= $pps['npm'] ?></td>
+            <td
+                data-toggle="tooltip"
+                data-placement="top"
+                title="<?= $pps['nama_prodi'] ?>"
+            >
+                <?= $pps['inisial_prodi'] ?>
+            </td>
 
-                                <td><?= $pps['nama_mahasiswa'] ?></td>
+            <td><?= $pps['sks_lulus'] ?></td>
 
-                                <td data-toggle="tooltip" data-placement="top" title="<?= $pps['nama_prodi'] ?>"><?= $pps['inisial_prodi'] ?></td>
+            <td
+                data-toggle="tooltip"
+                data-placement="top"
+                title="<?= $pps['nama_pembimbing_akademik'] ?>"
+            >
+                <?= $pps['inisial_pembimbing_akademik'] ?>
+            </td>
 
-                                <td><?= $pps['sks_lulus'] ?></td>
+            <!-- MATA KULIAH WAJIB BELUM LULUS -->
+            <td><?= $pps['mk_akan_diambil'] ?></td>
 
-                                <td data-toggle="tooltip" data-placement="top" title="<?= $pps['nama_pembimbing_akademik'] ?>"><?= $pps['inisial_pembimbing_akademik'] ?></td>
+            <!-- MATA KULIAH SEDANG DIAMBIL -->
+            <td><?= $pps['mk_sedang_diambil'] ?></td>
 
-                                <td><?= $pps['mk_sedang_diambil'] ?></td>
+            <!-- JENIS TUGAS AKHIR -->
+            <td><?= esc($pps['nama_jenis_tugas_akhir'] ?? '-') ?></td>
 
-                                <td><?= $pps['mk_akan_diambil'] ?></td>
+            <td>
+                <?= date_format(
+                    date_create($pps['tanggal_pengajuan_skripsi']),
+                    "d-m-Y"
+                ) ?>
+            </td>
 
-                                <td><?= date_format(date_create($pps['tanggal_pengajuan_skripsi']), "d-m-Y") ?></td>
+            <td class="status">
+                <?= ($pps['status_persetujuan_skripsi'] == null)
+                    ? "-"
+                    : $pps['status_persetujuan_skripsi'] ?>
+            </td>
 
-                                <td class="status"><?= ($pps['status_persetujuan_skripsi'] == null) ? "-" : $pps['status_persetujuan_skripsi'] ?></td>
+            <td class="aksi">
 
-                                <td class="aksi">
+                <a
+                    role="button"
+                    class="btn btn-primary"
+                    href="<?= base_url("TenagaKependidikan/detailPengajuanSkripsi/" . $pps['npm']) ?>"
+                    data-toggle="tooltip"
+                    title="Detail"
+                >
+                    <i class="fas fa-info-circle"></i>
+                </a>
 
-                                    <a role="button" class="btn btn-primary" href="<?= base_url("TenagaKependidikan/detailPengajuanSkripsi/".$pps['npm']) ?>" data-toggle="tooltip" title="Detail"><i class="fas fa-info-circle"></i></a>
+            </td>
 
-                                </td>
+        </tr>
 
-                            </tr>
+        <?php $counter++; ?>
 
-                            <?php $counter++; ?>
+    <?php endforeach; ?>
 
-                        <?php endforeach; ?>
-
-                    </tbody>
+</tbody>
 
                 </table>
 

@@ -212,22 +212,21 @@ $mkWajibDipilih = $sudahLulusSemua
                         >
 
                             <option value="" selected disabled>
-                                Pilih TA
+                             Pilih TA
                             </option>
 
-                            <option value="Skripsi">
-                                Skripsi
-                            </option>
-
-                            <option value="Proyek Akhir">
-                                Proyek Akhir
-                            </option>
-
-                            <option value="Publikasi">
-                                Publikasi 
-                            </option>
-
+                            <?php foreach ($jenisTugasAkhir as $jenis): ?>
+    <option
+        value="<?= esc($jenis['id_jenis_tugas_akhir']) ?>"
+        <?= ($mahasiswa['id_jenis_tugas_akhir'] ?? '') == $jenis['id_jenis_tugas_akhir'] ? 'selected' : '' ?>
+    >
+        <?= esc($jenis['nama_jenis_tugas_akhir']) ?>
+    </option>
+<?php endforeach; ?>
                         </select>
+                        <small class="text-danger d-none" id="errorJenisTA">
+                            Kolom ini harus diisi.
+                        </small>
 
                     </div>
                 </div>
@@ -321,6 +320,9 @@ $mkWajibDipilih = $sudahLulusSemua
                             </div>
 
                         </div>
+                        <small class="text-danger d-none" id="errorMKWajib">
+                            Kolom ini harus diisi.
+                        </small>
 
 
                         <!-- CHECKBOX SUDAH LULUS SEMUA -->
@@ -436,6 +438,10 @@ $mkWajibDipilih = $sudahLulusSemua
 
                         </div>
 
+                        <small class="text-danger d-none" id="errorMKSedang">
+                            Kolom ini harus diisi.
+                        </small>
+
                         <small class="text-muted">
                             Anda dapat memilih lebih dari satu mata kuliah.
                         </small>
@@ -476,13 +482,8 @@ $mkWajibDipilih = $sudahLulusSemua
 
                             <div class="custom-file">
 
-                                <input
-                                    type="file"
-                                    class="custom-file-input"
-                                    id="inputKhs"
-                                    name="inputKhs"
-                                    accept=".pdf"
-                                >
+                                <input type="file" class="custom-file-input"
+                                id="inputKhs" name="inputKhs">
 
                                 <label
                                     class="custom-file-label"
@@ -543,14 +544,8 @@ $mkWajibDipilih = $sudahLulusSemua
 
                             <div class="custom-file">
 
-                                <input
-                                    type="file"
-                                    class="custom-file-input"
-                                    id="inputKrs"
-                                    name="inputKrs"
-                                    accept=".pdf"
-                                >
-
+                                <input type="file" class="custom-file-input"
+                                id="inputKrs" name="inputKrs">
                                 <label
                                     class="custom-file-label"
                                     for="inputKrs"
@@ -611,13 +606,8 @@ $mkWajibDipilih = $sudahLulusSemua
 
                             <div class="custom-file">
 
-                                <input
-                                    type="file"
-                                    class="custom-file-input"
-                                    id="inputPersetujuanSkripsi"
-                                    name="inputPersetujuanSkripsi"
-                                    accept=".pdf"
-                                >
+                                <input type="file" class="custom-file-input"
+                                id="inputPersetujuanSkripsi" name="inputPersetujuanSkripsi">
 
                                 <label
                                     class="custom-file-label"
@@ -1039,63 +1029,35 @@ document.addEventListener('DOMContentLoaded', function () {
 
     });
 
-
-    // =========================================
-    // PERSIAPAN DATA SEBELUM FORM DIKIRIM
-    // =========================================
-
-    const form = document.getElementById('formDataPersetujuanSkripsi');
-
-    if (form) {
-
-        form.addEventListener('submit', function () {
-
-            const wajibDipilih = Array.from(
-                document.querySelectorAll(
-                    '#dropdownWajib .dropdown-mk-option input:checked'
-                )
-            ).map(function (checkbox) {
-                return checkbox.value;
-            });
-
-
-            const sedangDipilih = Array.from(
-                document.querySelectorAll(
-                    '#dropdownSedang .dropdown-mk-option input:checked'
-                )
-            ).map(function (checkbox) {
-                return checkbox.value;
-            });
-
-
-            // Input tersembunyi untuk nilai mata kuliah wajib.
-            const hiddenWajib = document.createElement('input');
-
-            hiddenWajib.type = 'hidden';
-
-            hiddenWajib.name = 'mk_akan_diambil';
-
-            hiddenWajib.value = checkboxLulus && checkboxLulus.checked
-                ? 'Sudah lulus semua'
-                : wajibDipilih.join(', ');
-
-            form.appendChild(hiddenWajib);
-
-
-            // Input tersembunyi untuk nilai mata kuliah sedang diambil.
-            const hiddenSedang = document.createElement('input');
-
-            hiddenSedang.type = 'hidden';
-
-            hiddenSedang.name = 'mk_sedang_diambil';
-
-            hiddenSedang.value = sedangDipilih.join(', ');
-
-            form.appendChild(hiddenSedang);
-
+    // Hilangkan pesan Jenis TA setelah pengguna memilih.
+    if (jenisTA && errorJenisTA) {
+        jenisTA.addEventListener('change', function () {
+            if (this.value) errorJenisTA.classList.add('d-none');
         });
-
     }
+
+    // Hilangkan pesan Mata Kuliah Wajib setelah ada pilihan.
+    document.querySelectorAll('#dropdownWajib .dropdown-mk-option input').forEach(function (checkbox) {
+        checkbox.addEventListener('change', function () {
+            if (getWajibDipilih().length > 0 || (checkboxLulus && checkboxLulus.checked)) {
+                errorMKWajib.classList.add('d-none');
+            }
+        });
+    });
+
+    // Pilihan "Sudah lulus semua" juga memenuhi Mata Kuliah Wajib.
+    if (checkboxLulus) {
+        checkboxLulus.addEventListener('change', function () {
+            if (this.checked) errorMKWajib.classList.add('d-none');
+        });
+    }
+
+    // Hilangkan pesan Mata Kuliah Sedang Berjalan setelah ada pilihan.
+    document.querySelectorAll('#dropdownSedang .dropdown-mk-option input').forEach(function (checkbox) {
+        checkbox.addEventListener('change', function () {
+            if (getSedangDipilih().length > 0) errorMKSedang.classList.add('d-none');
+        });
+    });
 
 });
 </script>

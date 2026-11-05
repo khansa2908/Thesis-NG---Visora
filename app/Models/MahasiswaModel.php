@@ -22,7 +22,7 @@ class MahasiswaModel extends Model
 
     protected $useSoftDeletes = false;
 
-    protected $allowedFields = ['npm', 'nama', 'email', 'angkatan', 'id_prodi', 'sks_lulus', 'pembimbing_akademik', 'mk_sedang_diambil', 'mk_akan_diambil', 'status_persetujuan_skripsi', 'file_khs', 'file_krs', 'file_persetujuan_skripsi', 'tanggal_pengajuan_skripsi'];
+    protected $allowedFields = ['npm', 'nama', 'email', 'angkatan', 'id_prodi', 'sks_lulus', 'pembimbing_akademik', 'mk_sedang_diambil', 'mk_akan_diambil', 'status_persetujuan_skripsi', 'file_khs', 'file_krs', 'file_persetujuan_skripsi', 'tanggal_pengajuan_skripsi', 'id_jenis_tugas_akhir'];
 
     protected $useTimestamps = false;
 
@@ -36,9 +36,11 @@ class MahasiswaModel extends Model
 
         m.file_khs, m.file_krs, m.file_persetujuan_skripsi, m.status_persetujuan_skripsi, prodi.inisial as inisial_prodi, prodi.nama as nama_prodi,
 
-        d.inisial as inisial_pembimbing_akademik, d.nama as nama_pembimbing_akademik
+        d.inisial as inisial_pembimbing_akademik, d.nama as nama_pembimbing_akademik, jta.nama_jenis_tugas_akhir AS nama_jenis_tugas_akhir
 
         FROM mahasiswa as m
+        LEFT JOIN jenis_tugas_akhir AS jta
+            ON jta.id_jenis_tugas_akhir = m.id_jenis_tugas_akhir
 
         INNER JOIN dosen as d on d.id = m.pembimbing_akademik
 
@@ -78,9 +80,11 @@ class MahasiswaModel extends Model
 
         m.file_khs, m.file_krs, m.file_persetujuan_skripsi, m.status_persetujuan_skripsi, prodi.inisial as inisial_prodi, prodi.nama as nama_prodi,
 
-        d.inisial as inisial_pembimbing_akademik, d.nama as nama_pembimbing_akademik
+        d.inisial as inisial_pembimbing_akademik, d.nama as nama_pembimbing_akademik, jta.nama_jenis_tugas_akhir AS nama_jenis_tugas_akhir
 
         FROM mahasiswa as m
+        LEFT JOIN jenis_tugas_akhir AS jta
+            ON jta.id_jenis_tugas_akhir = m.id_jenis_tugas_akhir
 
         INNER JOIN dosen as d on d.id = m.pembimbing_akademik
 
@@ -88,7 +92,7 @@ class MahasiswaModel extends Model
 
         WHERE m.sks_lulus is not null and
 
-        m.tanggal_pengajuan is not null and
+        m.tanggal_pengajuan_skripsi is not null and
 
         m.pembimbing_akademik is not null and
 
@@ -122,9 +126,11 @@ class MahasiswaModel extends Model
 
         m.file_khs, m.file_krs, m.file_persetujuan_skripsi, m.status_persetujuan_skripsi, 
 
-        prodi.nama as nama_prodi, d.nama as nama_pembimbing_akademik
+        prodi.nama as nama_prodi, d.nama as nama_pembimbing_akademik, jta.nama_jenis_tugas_akhir AS nama_jenis_tugas_akhir
 
         FROM mahasiswa as m
+        LEFT JOIN jenis_tugas_akhir AS jta
+           ON jta.id_jenis_tugas_akhir = m.id_jenis_tugas_akhir
 
         INNER JOIN dosen as d on d.id = m.pembimbing_akademik
 
